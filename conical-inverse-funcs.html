@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Lesson Synthesis - Feb 11, 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .math-font {
+            font-family: 'serif';
+            font-style: italic;
+        }
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #4f46e5;
+            cursor: pointer;
+            box-shadow: 0 0 2px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-indigo-700">Math Lesson Synthesis</h1>
+            <p class="text-slate-500">February 11, 2026 — Parametric Circles & Function Inversions</p>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="flex gap-4 mb-6 overflow-x-auto pb-2" id="main-nav">
+            <button onclick="switchTab('circle')" id="btn-circle" class="nav-btn flex items-center gap-2 px-4 py-2 rounded-full font-medium transition bg-indigo-600 text-white shadow-lg">
+                Parametric Circles
+            </button>
+            <button onclick="switchTab('functions')" id="btn-functions" class="nav-btn flex items-center gap-2 px-4 py-2 rounded-full font-medium transition bg-white text-slate-600 hover:bg-slate-100">
+                Function Inversion
+            </button>
+            <button onclick="switchTab('theory')" id="btn-theory" class="nav-btn flex items-center gap-2 px-4 py-2 rounded-full font-medium transition bg-white text-slate-600 hover:bg-slate-100">
+                Key Definitions
+            </button>
+        </nav>
+
+        <!-- Main Content -->
+        <main>
+            <!-- Tab: Circles -->
+            <div id="tab-circle" class="tab-content active">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <h2 class="text-xl font-bold mb-4 flex items-center gap-2 text-indigo-700">
+                            Exploring the Parameter <span class="math-font">k</span>
+                        </h2>
+                        <p class="text-sm text-slate-600 mb-6">
+                            Equation: <code class="code-font bg-slate-100 p-1 rounded text-xs">x² + y² - 2x + 2y + k + 3 = 0</code>
+                        </p>
+
+                        <div class="mb-8">
+                            <label class="block text-sm font-semibold mb-2">Value of <span class="math-font">k</span>: <span id="k-val">-5</span></label>
+                            <input 
+                                type="range" 
+                                min="-10" 
+                                max="2" 
+                                step="0.1" 
+                                value="-5" 
+                                id="k-slider"
+                                class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                            >
+                            <div class="flex justify-between text-xs text-slate-400 mt-2">
+                                <span>-10 (Large Circle)</span>
+                                <span>-1 (Point)</span>
+                                <span>2 (Imaginary)</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div id="status-box" class="p-4 rounded-xl border bg-green-50 border-green-100">
+                                <h3 id="status-title" class="font-bold">Real Circle</h3>
+                                <p id="status-desc" class="text-sm text-slate-600">The radius is R = ...</p>
+                            </div>
+
+                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                <details class="group">
+                                    <summary class="flex items-center justify-between cursor-pointer font-bold text-sm list-none">
+                                        Completing the Square Steps
+                                        <span class="transition group-open:rotate-90">▶</span>
+                                    </summary>
+                                    <div class="mt-4 space-y-3 text-sm">
+                                        <div class="flex gap-3"><span class="text-indigo-500 font-bold">1.</span> <div><p class="font-semibold">Original</p><p class="code-font text-xs text-slate-500">x² + y² - 2x + 2y + k + 3 = 0</p></div></div>
+                                        <div class="flex gap-3"><span class="text-indigo-500 font-bold">2.</span> <div><p class="font-semibold">Grouping</p><p class="code-font text-xs text-slate-500">(x² - 2x) + (y² + 2y) = -k - 3</p></div></div>
+                                        <div class="flex gap-3"><span class="text-indigo-500 font-bold">3.</span> <div><p class="font-semibold">Completing x</p><p class="code-font text-xs text-slate-500">(x - 1)² - 1</p></div></div>
+                                        <div class="flex gap-3"><span class="text-indigo-500 font-bold">4.</span> <div><p class="font-semibold">Completing y</p><p class="code-font text-xs text-slate-500">(y + 1)² - 1</p></div></div>
+                                        <div class="flex gap-3"><span class="text-indigo-500 font-bold">5.</span> <div><p class="font-semibold">Final Form</p><p class="code-font text-xs text-slate-500">(x - 1)² + (y + 1)² = -k - 1</p></div></div>
+                                    </div>
+                                </details>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center justify-center min-h-[400px]">
+                        <div class="relative w-full aspect-square max-w-[350px]">
+                            <svg id="circle-svg" viewBox="0 0 200 200" class="w-full h-full border border-slate-100 rounded-lg">
+                                <!-- Grid Lines -->
+                                <g id="grid"></g>
+                                <!-- Axes -->
+                                <line x1="100" y1="0" x2="100" y2="200" stroke="#cbd5e1" stroke-width="2" />
+                                <line x1="0" y1="100" x2="200" y2="100" stroke="#cbd5e1" stroke-width="2" />
+                                <!-- The Circle -->
+                                <circle id="viz-circle" cx="120" cy="120" r="40" fill="rgba(79, 70, 229, 0.1)" stroke="#4f46e5" stroke-width="2" />
+                                <circle cx="120" cy="120" r="2" fill="#ef4444" />
+                            </svg>
+                            <div class="absolute top-2 right-2 text-[10px] bg-white/90 p-2 rounded border border-slate-200">
+                                <p>Center: (1, -1)</p>
+                                <p id="viz-r2">R² = 4.00</p>
+                            </div>
+                        </div>
+                        <p class="mt-4 text-[10px] text-slate-400 text-center">
+                            The center is fixed at (1, -1). <span class="math-font">k</span> controls the radius size.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Functions -->
+            <div id="tab-functions" class="tab-content">
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                        <div>
+                            <h2 class="text-xl font-bold mb-4">Parabolas & Inverses</h2>
+                            <p class="text-slate-600 mb-4 text-sm leading-relaxed">
+                                To find an inverse, we reflect across the bisector line <span class="math-font text-indigo-600 font-bold">y = x</span>. 
+                                The full parabola <span class="math-font">y = x²</span> is not injective; it fails the horizontal line test.
+                            </p>
+                            
+                            <div class="bg-indigo-50 p-6 rounded-xl border border-indigo-100 space-y-4">
+                                <h3 class="font-bold text-indigo-800 text-sm uppercase tracking-wider">The Solution</h3>
+                                <div class="text-sm space-y-2 text-indigo-900">
+                                    <p>1. <strong>Restrict Domain:</strong> We only consider <span class="math-font">x ≥ 0</span>.</p>
+                                    <p>2. <strong>Bijectivity:</strong> Now the function is 1-to-1 and onto its range.</p>
+                                    <p>3. <strong>Inverse:</strong> Solve <span class="math-font">x = y²</span> for <span class="math-font">y</span> to get <span class="math-font text-emerald-600 font-bold">y = √x</span>.</p>
+                                </div>
+                            </div>
+
+                            <div class="mt-8 space-y-2">
+                                <div class="flex items-center gap-3"><div class="w-3 h-3 rounded-full bg-blue-500"></div><span class="text-xs font-mono">y = x² (Domain Restricted)</span></div>
+                                <div class="flex items-center gap-3"><div class="w-3 h-3 rounded-full bg-emerald-500"></div><span class="text-xs font-mono">y = √x (Inverse)</span></div>
+                                <div class="flex items-center gap-3"><div class="w-3 h-3 border border-dashed border-slate-400"></div><span class="text-xs font-mono italic">y = x (Symmetry)</span></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 rounded-xl overflow-hidden border border-slate-200 relative aspect-square">
+                            <svg viewBox="-5 -5 110 110" class="w-full h-full" style="transform: scaleY(-1)">
+                                <!-- Simplified Grid -->
+                                <path d="M0 0 L100 0 M0 20 L100 20 M0 40 L100 40 M0 60 L100 60 M0 80 L100 80 M0 100 L100 100" stroke="#e2e8f0" stroke-width="0.2"/>
+                                <path d="M0 0 L0 100 M20 0 L20 100 M40 0 L40 100 M60 0 L60 100 M80 0 L80 100 M100 0 L100 100" stroke="#e2e8f0" stroke-width="0.2"/>
+                                
+                                <line x1="0" y1="0" x2="100" y2="100" stroke="#94a3b8" stroke-width="0.5" stroke-dasharray="2,2" />
+                                
+                                <!-- y = x^2 curve -->
+                                <path d="M 0 0 Q 25 0 50 25 Q 75 50 100 100" fill="none" stroke="#3b82f6" stroke-width="2" />
+                                <!-- y = sqrt(x) curve -->
+                                <path d="M 0 0 Q 0 25 25 50 Q 50 75 100 100" fill="none" stroke="#10b981" stroke-width="2" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Theory -->
+            <div id="tab-theory" class="tab-content">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-orange-200 transition">
+                        <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center mb-4 text-orange-600 font-bold">I</div>
+                        <h3 class="font-bold mb-2">Injective (1-to-1)</h3>
+                        <p class="text-xs text-slate-500 mb-4 italic">"Ogni elemento del codominio è immagine di al massimo un elemento del dominio."</p>
+                        <p class="text-sm text-slate-600">Fails if two different inputs produce the same output (like a full parabola).</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-blue-200 transition">
+                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-4 text-blue-600 font-bold">S</div>
+                        <h3 class="font-bold mb-2">Surjective (Onto)</h3>
+                        <p class="text-xs text-slate-500 mb-4 italic">"L'immagine della funzione coincide con il codominio."</p>
+                        <p class="text-sm text-slate-600">Every single point in the target set is "hit" by the function.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-emerald-200 transition">
+                        <div class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center mb-4 text-emerald-600 font-bold">B</div>
+                        <h3 class="font-bold mb-2">Bijective</h3>
+                        <p class="text-xs text-slate-500 mb-4 italic">"Invertibile."</p>
+                        <p class="text-sm text-slate-600">Both injective and surjective. Required for a unique inverse function to exist.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="mt-12 pt-8 border-t border-slate-200 text-slate-400 text-xs flex justify-between">
+            <p>© 2026 Mathematics Department</p>
+            <p>Lesson: 2026-02-11 Synthesis</p>
+        </footer>
+    </div>
+
+    <script>
+        // Tab switching logic
+        function switchTab(tabId) {
+            // Update tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById('tab-' + tabId).classList.add('active');
+
+            // Update buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-lg');
+                btn.classList.add('bg-white', 'text-slate-600');
+            });
+            const activeBtn = document.getElementById('btn-' + tabId);
+            activeBtn.classList.add('bg-indigo-600', 'text-white', 'shadow-lg');
+            activeBtn.classList.remove('bg-white', 'text-slate-600');
+        }
+
+        // Circle visualization logic
+        const slider = document.getElementById('k-slider');
+        const kValLabel = document.getElementById('k-val');
+        const vizCircle = document.getElementById('viz-circle');
+        const vizR2 = document.getElementById('viz-r2');
+        const statusTitle = document.getElementById('status-title');
+        const statusDesc = document.getElementById('status-desc');
+        const statusBox = document.getElementById('status-box');
+
+        function updateCircle() {
+            const k = parseFloat(slider.value);
+            kValLabel.innerText = k.toFixed(1);
+            
+            const r2 = -(k + 1);
+            vizR2.innerText = `R² = ${r2.toFixed(2)}`;
+
+            if (r2 < 0) {
+                vizCircle.style.display = 'none';
+                statusTitle.innerText = "No Real Circle";
+                statusDesc.innerText = `R² is negative (${r2.toFixed(2)}). No points satisfy the equation.`;
+                statusBox.className = "p-4 rounded-xl border bg-red-50 border-red-100";
+            } else if (r2 === 0) {
+                vizCircle.style.display = 'block';
+                vizCircle.setAttribute('r', '1');
+                statusTitle.innerText = "Degenerate Circle";
+                statusDesc.innerText = "R² = 0. The circle is just a single point at (1, -1).";
+                statusBox.className = "p-4 rounded-xl border bg-orange-50 border-orange-100";
+            } else {
+                vizCircle.style.display = 'block';
+                const r = Math.sqrt(r2);
+                vizCircle.setAttribute('r', r * 20); // Scale for SVG
+                statusTitle.innerText = "Real Circle";
+                statusDesc.innerText = `The radius is R = √${r2.toFixed(2)} ≈ ${r.toFixed(2)}.`;
+                statusBox.className = "p-4 rounded-xl border bg-green-50 border-green-100";
+            }
+        }
+
+        // Initialize grid
+        const gridGroup = document.getElementById('grid');
+        for(let i = 0; i <= 200; i += 20) {
+            const lineH = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            lineH.setAttribute("x1", "0"); lineH.setAttribute("y1", i);
+            lineH.setAttribute("x2", "200"); lineH.setAttribute("y2", i);
+            lineH.setAttribute("stroke", "#f1f5f9");
+            gridGroup.appendChild(lineH);
+
+            const lineV = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            lineV.setAttribute("x1", i); lineV.setAttribute("y1", "0");
+            lineV.setAttribute("x2", i); lineV.setAttribute("y2", "200");
+            lineV.setAttribute("stroke", "#f1f5f9");
+            gridGroup.appendChild(lineV);
+        }
+
+        slider.addEventListener('input', updateCircle);
+        updateCircle();
+    </script>
+</body>
+</html>
