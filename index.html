@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Lab - Dashboard Dinamica</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Outfit', sans-serif; background-color: #f5f5f4; }
+        .loader { border-top-color: #0d9488; animation: spinner 1.5s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="p-8">
+    <div class="max-w-3xl mx-auto">
+        <header class="mb-12 text-center">
+            <h1 class="text-4xl font-bold text-stone-800 mb-2">Math Repository</h1>
+            <p class="text-stone-500">I tuoi strumenti interattivi aggiornati in tempo reale</p>
+        </header>
+
+        <div id="loading" class="flex flex-col items-center justify-center py-20">
+            <div class="loader ease-linear rounded-full border-4 border-t-4 border-stone-200 h-12 w-12 mb-4"></div>
+            <p class="text-stone-400">Scansione del repository...</p>
+        </div>
+
+        <div id="file-list" class="grid gap-6 hidden">
+            <!-- I link verranno inseriti qui dallo script -->
+        </div>
+
+        <div id="error-msg" class="hidden p-6 bg-red-50 text-red-700 rounded-2xl border border-red-200">
+            <p id="error-text">Impossibile caricare i file. Assicurati che il repository sia pubblico o controlla la console.</p>
+            <p class="text-xs mt-2 text-red-500 font-mono">Dettagli: Se sei nell'anteprima locale, configura userName e repoName nel codice.</p>
+        </div>
+    </div>
+
+    <script>
+        async function fetchRepoFiles() {
+            /**
+             * CONFIGURAZIONE MANUALE (Necessaria se l'auto-rilevamento fallisce)
+             * Sostituisci queste stringhe con i tuoi dati reali di GitHub dopo il caricamento.
+             */
+            let userName = "LucaPaganin"; // Esempio: "mario-rossi"
+            let repoName = "private-lessons"; // Esempio: "matematica-lab"
+
+            // Tentativo di auto-rilevamento se i campi sopra sono vuoti
+            if (!userName || !repoName) {
+                const hostname = window.location.hostname;
+                const pathname = window.location.pathname;
+
+                if (hostname.includes('github.io')) {
+                    userName = hostname.split('.')[0];
+                    repoName = pathname.split('/')[1];
+                }
+            }
+
+            // Se siamo ancora senza dati (es. anteprima Canvas), mostriamo un errore specifico
+            if (!userName || !repoName) {
+                console.warn("Auto-rilevamento fallito. Configura userName e repoName manualmente per il test.");
+                showError("Configurazione richiesta: Inserisci il tuo nome utente GitHub e il nome del repository nel codice HTML.");
+                return;
+            }
+
+            const apiUrl = `https://api.github.com/repos/${userName}/${repoName}/contents/`;
+
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) {
+                    if (response.status === 404) throw new Error('Repository non trovato. Controlla i nomi.');
+                    throw new Error(`Errore API GitHub (${response.status})`);
+                }
+                
+                const files = await response.json();
+                const container = document.getElementById('file-list');
+                const loading = document.getElementById('loading');
+                
+                // Filtriamo per file .html escludendo index.html stesso
+                const htmlFiles = files.filter(file => 
+                    file.name.endsWith('.html') && file.name !== 'index.html'
+                );
+
+                if (htmlFiles.length === 0) {
+                    container.innerHTML = `
+                        <div class="p-10 text-center border-2 border-dashed border-stone-300 rounded-2xl text-stone-400">
+                            Nessun file HTML trovato nel repository "${repoName}".
+                        </div>`;
+                } else {
+                    htmlFiles.forEach(file => {
+                        const card = document.createElement('a');
+                        card.href = file.name;
+                        card.className = "block p-6 bg-white rounded-2xl shadow-sm border border-stone-200 hover:border-teal-500 hover:shadow-md transition-all group";
+                        
+                        const readableName = file.name
+                            .replace('.html', '')
+                            .replace(/_/g, ' ')
+                            .replace(/-/g, ' ')
+                            .replace(/\b\w/g, l => l.toUpperCase());
+
+                        card.innerHTML = `
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h2 class="text-xl font-bold text-stone-800 group-hover:text-teal-600">${readableName}</h2>
+                                    <p class="text-stone-500 text-sm">File: ${file.name}</p>
+                                </div>
+                                <span class="text-teal-500 text-2xl">→</span>
+                            </div>
+                        `;
+                        container.appendChild(card);
+                    });
+                }
+
+                loading.classList.add('hidden');
+                container.classList.remove('hidden');
+
+            } catch (error) {
+                console.error(error);
+                showError(error.message);
+            }
+        }
+
+        function showError(message) {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('error-msg').classList.remove('hidden');
+            document.getElementById('error-text').innerText = message;
+        }
+
+        // Avvio della scansione
+        fetchRepoFiles();
+    </script>
+</body>
+</html>
