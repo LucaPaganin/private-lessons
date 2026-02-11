@@ -1,0 +1,679 @@
+<!-- Chosen Palette: Warm Stone & Indigo (Stone-50 background, Indigo-600 for primary math elements, Amber-600 for interactions) -->
+
+<!-- Application Structure Plan:
+The application is designed as a "Digital Math Lab" divided into three distinct modules to guide the user through the lesson's logical flow:
+1. **Overview:** A brief context setting.
+2. **Module A: The Geometry of Parameters:** Focuses on the parametric circle. It splits the cognitive load by separating the *algebraic derivation* (Completing the Square) from the *geometric visualization* (Slider & Graph). This allows users to understand 'how' we get the formula before seeing 'what' it looks like.
+3. **Module B: Function Mechanics:** Covers the theoretical properties (Injection/Surjection) using interactive cards, serving as a prerequisite for the final section.
+4. **Module C: The Inversion Workbench:** A unified view to experiment with the parabola, domain restriction, and symmetry.
+
+```
+Why this structure? The lesson moves from specific algebraic manipulation to abstract function theory. Separating these into &quot;Geometry&quot; and &quot;Analysis&quot; tabs keeps the interface clean while the interactive graphs allow for immediate feedback, which is crucial for understanding concepts like &quot;degenerate circle&quot; or &quot;domain restriction&quot;.
+
+```
+
+-->
+
+<!-- Visualization & Content Choices:
+1. **Parametric Circle Lab:**
+- *Goal:* Demonstrate how 'k' affects existence and radius.
+- *Viz:* Chart.js Scatter Plot. We calculate points dynamically based on r = sqrt(-(k+1)).
+- *Interaction:* Slider for 'k'. Real-time updates of the chart and the algebraic status text.
+- *Justification:* A static image cannot convey the "vanishing" of the circle when k > -1.
+
+```
+2. **Completing the Square Step-by-Step:**
+   - *Goal:* Teach the algebraic method.
+   - *Viz:* HTML/CSS Steps.
+   - *Interaction:* &quot;Show Next Step&quot; button.
+   - *Justification:* Prevents information overload by revealing the logic line-by-line.
+
+3. **Function Definition Cards:**
+   - *Goal:* Clarify Injective/Surjective/Bijective.
+   - *Viz:* Styled HTML Cards with CSS-based mapping diagrams (using simple shapes/lines).
+   - *Interaction:* Hover/Click to expand details.
+   - *Justification:* Simple text is boring; interactive cards encourage exploration of definitions.
+
+4. **Parabola Inversion Plot:**
+   - *Goal:* Visualize the horizontal line test failure and the symmetry of inverses.
+   - *Viz:* Chart.js Line Chart.
+   - *Interaction:* Toggles for &quot;Restrict Domain&quot; (changes dataset) and &quot;Show Inverse&quot; (adds dataset).
+   - *Justification:* Shows exactly *why* the restriction is needed ($x \ge 0$) to make the function bijective.
+
+5. **Library:** Chart.js used for all plotting. Tailwind for layout. No SVG/Mermaid.
+
+```
+
+-->
+
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+<!DOCTYPE html>
+
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laboratorio Matematico: Parametri e Inversioni</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;600;700&display=swap');
+
+    body { font-family: 'Inter', sans-serif; }
+    .font-math { font-family: 'Fira Code', monospace; }
+    
+    /* Chart Container Styling - Maintain square aspect ratio for circles */
+    .chart-container {
+        position: relative;
+        width: 100%;
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
+        aspect-ratio: 1 / 1;
+        min-height: 300px;
+    }
+
+    /* Mobile adjustment for chart container */
+    @media (max-width: 640px) {
+        .chart-container {
+            max-width: 100%;
+            min-height: 250px;
+        }
+    }
+
+    /* Custom scrollbar for cleanliness */
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+        background: #f5f5f4; 
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #d6d3d1; 
+        border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: #a8a29e; 
+    }
+
+    .step-transition {
+        transition: all 0.5s ease-in-out;
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    .step-visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+</style>
+
+</head>
+<body class="bg-stone-50 text-stone-800">
+
+<!-- Navigation -->
+<nav class="sticky top-0 z-50 bg-stone-50/95 backdrop-blur border-b border-stone-200 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+            <div class="flex items-center gap-2">
+                <span class="text-2xl text-amber-600 font-bold">∑</span>
+                <span class="font-bold text-lg tracking-tight text-stone-700">MathLab<span class="text-stone-400">.11Feb</span></span>
+            </div>
+            <div class="hidden md:flex space-x-8">
+                <button onclick="navigateTo('intro')" class="nav-link text-stone-600 hover:text-indigo-600 font-medium transition-colors" data-target="intro">Intro</button>
+                <button onclick="navigateTo('circle')" class="nav-link text-stone-600 hover:text-indigo-600 font-medium transition-colors" data-target="circle">Circonferenza</button>
+                <button onclick="navigateTo('functions')" class="nav-link text-stone-600 hover:text-indigo-600 font-medium transition-colors" data-target="functions">Funzioni</button>
+            </div>
+            <!-- Mobile Menu Button (Functional via simple JS below) -->
+            <button onclick="toggleMobileMenu()" class="md:hidden p-2 text-stone-600">
+                <span class="text-xl">☰</span>
+            </button>
+        </div>
+    </div>
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="hidden md:hidden bg-white border-b border-stone-200 px-4 py-2 space-y-2 shadow-lg">
+        <button onclick="navigateTo('intro')" class="block w-full text-left py-2 font-medium text-stone-600">Intro</button>
+        <button onclick="navigateTo('circle')" class="block w-full text-left py-2 font-medium text-stone-600">Circonferenza Parametrica</button>
+        <button onclick="navigateTo('functions')" class="block w-full text-left py-2 font-medium text-stone-600">Inversione Funzioni</button>
+    </div>
+</nav>
+
+<!-- Main Content Area -->
+<main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+
+    <!-- SECTION: INTRO -->
+    <section id="intro" class="section-view animate-fade-in">
+        <div class="bg-white rounded-2xl shadow-sm border border-stone-200 p-8 md:p-12 text-center">
+            <h1 class="text-3xl md:text-5xl font-bold text-stone-800 mb-6">Sintesi Lezione: Geometria & Analisi</h1>
+            <p class="text-lg text-stone-600 max-w-2xl mx-auto leading-relaxed mb-8">
+                Benvenuti nel laboratorio interattivo della lezione dell'11 Febbraio 2026. 
+                Questa applicazione sintetizza due concetti fondamentali: la manipolazione parametrica delle <strong>circonferenze</strong> e la teoria dell'<strong>inversione delle funzioni</strong>.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                <div onclick="navigateTo('circle')" class="group cursor-pointer p-6 bg-stone-50 rounded-xl border border-stone-200 hover:border-indigo-400 hover:shadow-md transition-all">
+                    <div class="text-indigo-600 text-4xl mb-3 group-hover:scale-110 transition-transform">◯</div>
+                    <h3 class="font-bold text-lg mb-2">Circonferenza Parametrica</h3>
+                    <p class="text-sm text-stone-500">Analisi dell'equazione <span class="font-math text-stone-700">x² + y² ... + k = 0</span> e del raggio variabile.</p>
+                </div>
+                <div onclick="navigateTo('functions')" class="group cursor-pointer p-6 bg-stone-50 rounded-xl border border-stone-200 hover:border-emerald-400 hover:shadow-md transition-all">
+                    <div class="text-emerald-600 text-4xl mb-3 group-hover:scale-110 transition-transform">⇄</div>
+                    <h3 class="font-bold text-lg mb-2">Inversione di Funzioni</h3>
+                    <p class="text-sm text-stone-500">Dai concetti di iniettività alla costruzione dell'inversa della parabola.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION: PARAMETRIC CIRCLE -->
+    <section id="circle" class="section-view hidden">
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-stone-800 mb-4">La Circonferenza Parametrica</h2>
+            <p class="text-stone-600 leading-relaxed max-w-3xl">
+                In questa sezione analizziamo come un parametro <span class="font-math bg-stone-100 px-1 rounded">k</span> influenza la forma e l'esistenza di una figura geometrica. 
+                Partendo dall'equazione generale, utilizziamo il metodo del "Completamento del Quadrato" per isolare centro e raggio, scoprendo che la circonferenza non esiste per tutti i valori di k.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <!-- Algebraic Derivation Module -->
+            <div class="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 flex flex-col">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-indigo-700">1. Analisi Algebrica</h3>
+                    <button onclick="nextStep()" id="btn-next-step" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
+                        Mostra Passaggio Successivo
+                    </button>
+                </div>
+                
+                <div class="flex-grow space-y-4 font-math text-sm md:text-base bg-stone-50 p-6 rounded-xl border border-stone-100 overflow-y-auto max-h-[400px]">
+                    <div class="step-visible p-2 border-l-4 border-indigo-500 bg-white shadow-sm">
+                        <p class="text-stone-500 text-xs uppercase font-bold mb-1">Equazione Iniziale</p>
+                        <p>x² + y² - 2x + 2y + k + 3 = 0</p>
+                    </div>
+                    
+                    <div id="step-1" class="step-transition hidden p-2 border-l-4 border-stone-300">
+                        <p class="text-stone-500 text-xs uppercase font-bold mb-1">Riordino i termini</p>
+                        <p>(x² - 2x) + (y² + 2y) = -k - 3</p>
+                    </div>
+
+                    <div id="step-2" class="step-transition hidden p-2 border-l-4 border-stone-300">
+                        <p class="text-stone-500 text-xs uppercase font-bold mb-1">Completamento Quadrato (x)</p>
+                        <p>x² - 2x <span class="text-indigo-600">→ agg/tolgo 1 →</span> (x - 1)² - 1</p>
+                    </div>
+
+                    <div id="step-3" class="step-transition hidden p-2 border-l-4 border-stone-300">
+                        <p class="text-stone-500 text-xs uppercase font-bold mb-1">Completamento Quadrato (y)</p>
+                        <p>y² + 2y <span class="text-indigo-600">→ agg/tolgo 1 →</span> (y + 1)² - 1</p>
+                    </div>
+
+                    <div id="step-4" class="step-transition hidden p-2 border-l-4 border-stone-300">
+                        <p class="text-stone-500 text-xs uppercase font-bold mb-1">Sostituzione</p>
+                        <p>(x - 1)² - 1 + (y + 1)² - 1 = -k - 3</p>
+                    </div>
+
+                    <div id="step-5" class="step-transition hidden p-2 border-l-4 border-amber-500 bg-amber-50">
+                        <p class="text-amber-700 text-xs uppercase font-bold mb-1">Forma Finale Standard</p>
+                        <p class="font-bold text-stone-900">(x - 1)² + (y + 1)² = -(k + 1)</p>
+                        <p class="text-xs text-stone-600 mt-2">Centro C(1, -1) | Raggio² = -(k+1)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualization Module -->
+            <div class="bg-white rounded-2xl shadow-sm border border-stone-200 p-6">
+                <h3 class="text-xl font-bold text-indigo-700 mb-4">2. Laboratorio Grafico</h3>
+                
+                <!-- Controls -->
+                <div class="bg-stone-50 p-4 rounded-xl mb-6 border border-stone-200">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="font-bold text-stone-700">Valore di k: <span id="k-value-display" class="font-math text-indigo-600 text-lg">-5</span></label>
+                        <span id="circle-status" class="text-xs font-bold uppercase px-2 py-1 rounded bg-emerald-100 text-emerald-700">Circonferenza Reale</span>
+                    </div>
+                    <input type="range" id="k-slider" min="-10" max="2" step="0.1" value="-5" class="w-full h-2 bg-stone-300 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                    <div class="flex justify-between text-xs text-stone-400 mt-2 font-math">
+                        <span>-10</span>
+                        <span class="text-amber-600 font-bold">-1 (Limite)</span>
+                        <span>2</span>
+                    </div>
+                    <div class="mt-4 text-sm border-t border-stone-200 pt-3">
+                        <p>Raggio² = <span id="r-squared-display" class="font-math font-bold">4</span></p>
+                        <p class="text-stone-500 text-xs mt-1">Esiste solo se <span class="font-math">-(k+1) ≥ 0</span>, quindi <span class="font-math">k ≤ -1</span>.</p>
+                    </div>
+                </div>
+
+                <!-- Chart Container -->
+                <div class="chart-container">
+                    <canvas id="circleChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION: FUNCTIONS -->
+    <section id="functions" class="section-view hidden">
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-stone-800 mb-4">Proprietà delle Funzioni & Inversione</h2>
+            <p class="text-stone-600 leading-relaxed max-w-3xl">
+                Per poter invertire una funzione, questa deve soddisfare requisiti specifici. 
+                Qui esploriamo le definizioni fondamentali (Iniettività, Suriettività, Biettività) e le applichiamo alla funzione parabola, scoprendo come una restrizione di dominio permetta di calcolarne l'inversa.
+            </p>
+        </div>
+
+        <!-- Theory Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <!-- Card 1 -->
+            <div class="bg-white p-6 rounded-xl border border-stone-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                <div class="absolute top-0 right-0 p-4 text-stone-200 group-hover:text-indigo-100 transition-colors text-6xl font-bold -mt-4 -mr-4">I</div>
+                <h3 class="text-lg font-bold text-indigo-700 mb-2">Iniettiva (1-to-1)</h3>
+                <p class="text-sm text-stone-600 mb-4">Ogni elemento del codominio è raggiunto al massimo da una freccia.</p>
+                <div class="h-24 bg-stone-50 rounded border border-stone-100 flex items-center justify-center text-xs text-stone-400">
+                    <!-- Simple visual represenation -->
+                    <div class="flex gap-4">
+                        <div class="flex flex-col gap-1"><span class="w-2 h-2 rounded-full bg-indigo-400"></span><span class="w-2 h-2 rounded-full bg-indigo-400"></span></div>
+                        <div class="text-stone-300">→</div>
+                        <div class="flex flex-col gap-1"><span class="w-2 h-2 rounded-full bg-emerald-400"></span><span class="w-2 h-2 rounded-full bg-emerald-400"></span><span class="w-2 h-2 rounded-full border border-emerald-400"></span></div>
+                    </div>
+                </div>
+                <p class="mt-3 text-xs text-amber-600">Test Retta Orizzontale: interseca 1 sola volta.</p>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="bg-white p-6 rounded-xl border border-stone-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                <div class="absolute top-0 right-0 p-4 text-stone-200 group-hover:text-indigo-100 transition-colors text-6xl font-bold -mt-4 -mr-4">S</div>
+                <h3 class="text-lg font-bold text-indigo-700 mb-2">Suriettiva (Onto)</h3>
+                <p class="text-sm text-stone-600 mb-4">Ogni elemento del codominio è colpito da almeno una freccia. Nessun escluso.</p>
+                <div class="h-24 bg-stone-50 rounded border border-stone-100 flex items-center justify-center text-xs text-stone-400">
+                     <div class="flex gap-4">
+                        <div class="flex flex-col gap-1"><span class="w-2 h-2 rounded-full bg-indigo-400"></span><span class="w-2 h-2 rounded-full bg-indigo-400"></span><span class="w-2 h-2 rounded-full bg-indigo-400"></span></div>
+                        <div class="text-stone-300">→</div>
+                        <div class="flex flex-col gap-1"><span class="w-2 h-2 rounded-full bg-emerald-400"></span><span class="w-2 h-2 rounded-full bg-emerald-400"></span></div>
+                    </div>
+                </div>
+                <p class="mt-3 text-xs text-amber-600">Immagine = Codominio.</p>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="bg-white p-6 rounded-xl border border-stone-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group border-b-4 border-b-emerald-500">
+                <div class="absolute top-0 right-0 p-4 text-stone-200 group-hover:text-emerald-100 transition-colors text-6xl font-bold -mt-4 -mr-4">B</div>
+                <h3 class="text-lg font-bold text-emerald-700 mb-2">Biettiva</h3>
+                <p class="text-sm text-stone-600 mb-4">Iniettiva + Suriettiva. Corrispondenza perfetta uno-a-uno.</p>
+                <div class="h-24 bg-stone-50 rounded border border-stone-100 flex items-center justify-center text-xs text-stone-400">
+                     <div class="flex gap-4">
+                        <div class="flex flex-col gap-1"><span class="w-2 h-2 rounded-full bg-indigo-400"></span><span class="w-2 h-2 rounded-full bg-indigo-400"></span></div>
+                        <div class="text-stone-300">↔</div>
+                        <div class="flex flex-col gap-1"><span class="w-2 h-2 rounded-full bg-emerald-400"></span><span class="w-2 h-2 rounded-full bg-emerald-400"></span></div>
+                    </div>
+                </div>
+                <p class="mt-3 text-xs font-bold text-emerald-600">Condizione necessaria per l'inversione.</p>
+            </div>
+        </div>
+
+        <!-- Inversion Workbench -->
+        <div class="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 md:p-8">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div>
+                    <h3 class="text-xl font-bold text-stone-800">Banco di Lavoro: Invertire la Parabola</h3>
+                    <p class="text-sm text-stone-500">Visualizza <span class="font-math">y = x²</span> e la sua inversa.</p>
+                </div>
+                <div class="flex gap-2 bg-stone-100 p-1 rounded-lg">
+                    <button onclick="toggleDomain()" id="btn-domain" class="px-4 py-2 rounded-md text-sm font-medium text-stone-600 hover:bg-white hover:shadow-sm transition-all">
+                        1. Restringi Dominio (x≥0)
+                    </button>
+                    <button onclick="toggleInverse()" id="btn-inverse" class="px-4 py-2 rounded-md text-sm font-medium text-stone-600 hover:bg-white hover:shadow-sm transition-all opacity-50 cursor-not-allowed" disabled>
+                        2. Mostra Inversa (√x)
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex flex-col lg:flex-row gap-8 items-start">
+                <div class="chart-container flex-grow">
+                    <canvas id="parabolaChart"></canvas>
+                </div>
+                <div class="w-full lg:w-1/3 bg-stone-50 p-6 rounded-xl border border-stone-200 text-sm space-y-4">
+                    <div id="info-full">
+                        <h4 class="font-bold text-red-600 mb-2">Problema: Non Iniettiva</h4>
+                        <p class="text-stone-600">La parabola completa non passa il test della retta orizzontale. Ad esempio, per y=4, abbiamo x=2 e x=-2. Non possiamo definire una funzione inversa unica.</p>
+                    </div>
+                    <div id="info-restricted" class="hidden">
+                        <h4 class="font-bold text-amber-600 mb-2">Soluzione: Restrizione</h4>
+                        <p class="text-stone-600">Consideriamo solo il ramo destro ($x \ge 0$). Ora la funzione è biettiva!</p>
+                    </div>
+                    <div id="info-inverse" class="hidden">
+                        <h4 class="font-bold text-emerald-600 mb-2">Risultato: Simmetria</h4>
+                        <p class="text-stone-600">L'inversa è $y = \sqrt{x}$. Graficamente, è la riflessione rispetto alla bisettrice $y=x$.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<!-- Footer -->
+<footer class="bg-stone-100 border-t border-stone-200 py-8 mt-12">
+    <div class="max-w-6xl mx-auto px-4 text-center">
+        <p class="text-stone-500 text-sm">Laboratorio sviluppato per la lezione del 11.02.2026</p>
+        <p class="text-stone-400 text-xs mt-2">Dati e concetti basati su: Transcript e Note PDF</p>
+    </div>
+</footer>
+
+<!-- JavaScript Logic -->
+<script>
+    // --- Navigation Logic ---
+    function navigateTo(sectionId) {
+        // Hide all sections
+        document.querySelectorAll('.section-view').forEach(el => {
+            el.classList.add('hidden');
+        });
+        // Show target
+        const target = document.getElementById(sectionId);
+        target.classList.remove('hidden');
+        
+        // Update Menu Active State
+        document.querySelectorAll('.nav-link').forEach(btn => {
+            if(btn.dataset.target === sectionId) {
+                btn.classList.add('text-indigo-600', 'bg-stone-100/50', 'rounded-lg', 'px-3', 'py-1');
+                btn.classList.remove('text-stone-600');
+            } else {
+                btn.classList.remove('text-indigo-600', 'bg-stone-100/50', 'rounded-lg', 'px-3', 'py-1');
+                btn.classList.add('text-stone-600');
+            }
+        });
+
+        // Close mobile menu if open
+        document.getElementById('mobile-menu').classList.add('hidden');
+    }
+
+    function toggleMobileMenu() {
+        document.getElementById('mobile-menu').classList.toggle('hidden');
+    }
+
+    // --- Module 1: Completing the Square Steps ---
+    let currentStep = 0;
+    function nextStep() {
+        currentStep++;
+        const stepEl = document.getElementById(`step-${currentStep}`);
+        if (stepEl) {
+            stepEl.classList.remove('hidden');
+            // Small delay to trigger transition
+            setTimeout(() => {
+                stepEl.classList.remove('step-transition');
+                stepEl.classList.add('step-visible');
+            }, 10);
+            
+            // Scroll to bottom of container
+            stepEl.parentElement.scrollTop = stepEl.parentElement.scrollHeight;
+        }
+        if (currentStep >= 5) {
+            document.getElementById('btn-next-step').disabled = true;
+            document.getElementById('btn-next-step').innerText = "Analisi Completa";
+            document.getElementById('btn-next-step').classList.add('opacity-50', 'cursor-not-allowed');
+        }
+    }
+
+    // --- Module 1: Circle Visualization (Chart.js) ---
+    const circleCtx = document.getElementById('circleChart').getContext('2d');
+    const kSlider = document.getElementById('k-slider');
+    const kDisplay = document.getElementById('k-value-display');
+    const rDisplay = document.getElementById('r-squared-display');
+    const statusDisplay = document.getElementById('circle-status');
+
+    // Generate data for circle
+    function generateCircleData(k) {
+        const rSquared = -(k + 1);
+        if (rSquared < 0) return []; // No real circle
+        
+        const r = Math.sqrt(rSquared);
+        const points = [];
+        // Use 72 points for smoothness
+        for (let i = 0; i <= 72; i++) {
+            const theta = (i / 72) * 2 * Math.PI;
+            points.push({
+                x: 1 + r * Math.cos(theta),
+                y: -1 + r * Math.sin(theta)
+            });
+        }
+        return points;
+    }
+
+    const circleChart = new Chart(circleCtx, {
+        type: 'scatter',
+        data: {
+            datasets: [
+                {
+                    label: 'Circonferenza',
+                    data: generateCircleData(-5),
+                    backgroundColor: 'rgba(79, 70, 229, 0.2)',
+                    borderColor: 'rgba(79, 70, 229, 1)',
+                    borderWidth: 2,
+                    showLine: true,
+                    pointRadius: 0
+                },
+                {
+                    label: 'Centro C(1, -1)',
+                    data: [{x: 1, y: -1}],
+                    backgroundColor: '#ef4444',
+                    pointRadius: 5
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 1,
+            scales: {
+                x: {
+                    min: -6,
+                    max: 6,
+                    grid: { color: '#e5e7eb' },
+                    title: { display: true, text: 'X' }
+                },
+                y: {
+                    min: -6,
+                    max: 6,
+                    grid: { color: '#e5e7eb' },
+                    title: { display: true, text: 'Y' }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    enabled: false // Disable tooltips for cleaner interaction
+                },
+                legend: {
+                    position: 'bottom'
+                }
+            },
+            animation: {
+                duration: 0 // Immediate update for slider
+            }
+        }
+    });
+
+    kSlider.addEventListener('input', (e) => {
+        const k = parseFloat(e.target.value);
+        kDisplay.innerText = k;
+        
+        const rSquared = -(k + 1);
+        rDisplay.innerText = rSquared.toFixed(2);
+
+        // Update UI Status
+        if (rSquared < 0) {
+            statusDisplay.innerText = "Nessuna Circonferenza Reale";
+            statusDisplay.className = "text-xs font-bold uppercase px-2 py-1 rounded bg-red-100 text-red-700";
+            circleChart.data.datasets[0].data = [];
+        } else if (rSquared === 0) {
+            statusDisplay.innerText = "Circonferenza Degenere (Punto)";
+            statusDisplay.className = "text-xs font-bold uppercase px-2 py-1 rounded bg-amber-100 text-amber-700";
+            circleChart.data.datasets[0].data = [{x: 1, y: -1}];
+        } else {
+            statusDisplay.innerText = "Circonferenza Reale";
+            statusDisplay.className = "text-xs font-bold uppercase px-2 py-1 rounded bg-emerald-100 text-emerald-700";
+            circleChart.data.datasets[0].data = generateCircleData(k);
+        }
+        circleChart.update();
+    });
+
+    // --- Module 3: Parabola Inversion (Chart.js) ---
+    const parabolaCtx = document.getElementById('parabolaChart').getContext('2d');
+    let isRestricted = false;
+    let showInverse = false;
+
+    // Dataset Generators
+    function generateParabola(restricted) {
+        const points = [];
+        const start = restricted ? 0 : -3;
+        for (let x = start; x <= 3; x += 0.1) {
+            points.push({x: x, y: x*x});
+        }
+        return points;
+    }
+
+    function generateInverse() {
+        const points = [];
+        for (let x = 0; x <= 9; x += 0.1) { // Up to 9 because sqrt(9)=3
+            points.push({x: x, y: Math.sqrt(x)});
+        }
+        return points;
+    }
+
+    function generateSymmetryLine() {
+         return [{x: -3, y: -3}, {x: 9, y: 9}];
+    }
+
+    const parabolaChart = new Chart(parabolaCtx, {
+        type: 'line',
+        data: {
+            datasets: [
+                {
+                    label: 'y = x²',
+                    data: generateParabola(false),
+                    borderColor: '#dc2626', // Red initially
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    fill: false
+                },
+                {
+                    label: 'y = x (Simmetria)',
+                    data: generateSymmetryLine(),
+                    borderColor: '#d6d3d1',
+                    borderWidth: 1,
+                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    hidden: true
+                },
+                {
+                    label: 'y = √x (Inversa)',
+                    data: [],
+                    borderColor: '#10b981', // Emerald
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    hidden: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 1,
+            scales: {
+                x: {
+                    min: -3,
+                    max: 6,
+                    grid: { color: '#e5e7eb' },
+                    title: { display: true, text: 'X' }
+                },
+                y: {
+                    min: -3,
+                    max: 6,
+                    grid: { color: '#e5e7eb' },
+                    title: { display: true, text: 'Y' }
+                }
+            },
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+
+    function toggleDomain() {
+        const btn = document.getElementById('btn-domain');
+        const invBtn = document.getElementById('btn-inverse');
+        const infoFull = document.getElementById('info-full');
+        const infoRes = document.getElementById('info-restricted');
+
+        isRestricted = !isRestricted;
+
+        if (isRestricted) {
+            // Update State
+            btn.innerText = "Ripristina Dominio Completo";
+            btn.classList.add('bg-indigo-50', 'text-indigo-700', 'border', 'border-indigo-200');
+            
+            // Enable Inverse Button
+            invBtn.disabled = false;
+            invBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            invBtn.classList.add('bg-emerald-50', 'text-emerald-700', 'border', 'border-emerald-200');
+
+            // Update Chart
+            parabolaChart.data.datasets[0].data = generateParabola(true);
+            parabolaChart.data.datasets[0].borderColor = '#d97706'; // Change to Amber
+            parabolaChart.data.datasets[0].label = 'y = x² (x ≥ 0)';
+            
+            // Info Text
+            infoFull.classList.add('hidden');
+            infoRes.classList.remove('hidden');
+        } else {
+            // Reset everything
+            btn.innerText = "1. Restringi Dominio (x≥0)";
+            btn.classList.remove('bg-indigo-50', 'text-indigo-700', 'border', 'border-indigo-200');
+            
+            // Disable Inverse
+            showInverse = false;
+            invBtn.disabled = true;
+            invBtn.innerText = "2. Mostra Inversa (√x)";
+            invBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            invBtn.classList.remove('bg-emerald-50', 'text-emerald-700', 'border', 'border-emerald-200');
+
+            // Chart Reset
+            parabolaChart.data.datasets[0].data = generateParabola(false);
+            parabolaChart.data.datasets[0].borderColor = '#dc2626';
+            parabolaChart.data.datasets[0].label = 'y = x²';
+            parabolaChart.data.datasets[1].hidden = true;
+            parabolaChart.data.datasets[2].data = [];
+            parabolaChart.data.datasets[2].hidden = true;
+
+            // Info Reset
+            infoFull.classList.remove('hidden');
+            infoRes.classList.add('hidden');
+            document.getElementById('info-inverse').classList.add('hidden');
+        }
+        parabolaChart.update();
+    }
+
+    function toggleInverse() {
+        const btn = document.getElementById('btn-inverse');
+        const infoInv = document.getElementById('info-inverse');
+        
+        showInverse = !showInverse;
+
+        if (showInverse) {
+            btn.innerText = "Nascondi Inversa";
+            parabolaChart.data.datasets[1].hidden = false; // Show Symmetry Line
+            parabolaChart.data.datasets[2].hidden = false;
+            parabolaChart.data.datasets[2].data = generateInverse();
+            infoInv.classList.remove('hidden');
+        } else {
+            btn.innerText = "2. Mostra Inversa (√x)";
+            parabolaChart.data.datasets[1].hidden = true;
+            parabolaChart.data.datasets[2].hidden = true;
+            infoInv.classList.add('hidden');
+        }
+        parabolaChart.update();
+    }
+
+    // Initialize first view
+    navigateTo('intro');
+
+</script>
+
+</body>
+</html>
