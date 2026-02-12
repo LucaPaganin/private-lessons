@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Esploratore Interattivo di Termodinamica</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Plotly.js for 3D visualizations -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    
+    <!-- MathJax per il rendering delle formule -->
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #fef2f2; /* Red 50 - warm background */
+            color: #44403c; /* Stone 700 */
+        }
+        h1, h2, h3, .serif {
+            font-family: 'Lora', serif;
+        }
+        
+        /* Chart Container Styling */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px; 
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #fef2f2; }
+        ::-webkit-scrollbar-thumb { background: #fca5a5; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #f87171; }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .nav-active {
+            background-color: #dc2626; /* Red 600 */
+            color: white;
+            font-weight: 600;
+        }
+        
+        /* Animation for highlighting */
+        @keyframes flash {
+            0% { background-color: rgba(255, 255, 255, 0.9); }
+            50% { background-color: #fee2e2; } /* Red 100 */
+            100% { background-color: rgba(255, 255, 255, 0.9); }
+        }
+        .highlight-flash {
+            animation: flash 0.5s ease-in-out;
+        }
+
+        /* Temperature gradient backgrounds */
+        .temp-gradient-cold {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        }
+        .temp-gradient-warm {
+            background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
+        }
+        .temp-gradient-hot {
+            background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+        }
+
+        /* Slider styling */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+            width: 100%;
+        }
+        input[type="range"]::-webkit-slider-track {
+            background: linear-gradient(to right, #dbeafe, #fca5a5);
+            height: 0.5rem;
+            border-radius: 0.5rem;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            background-color: #dc2626;
+            height: 1.5rem;
+            width: 1.5rem;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col md:flex-row">
+
+    <!-- SIDEBAR NAVIGATION -->
+    <nav class="w-full md:w-64 bg-red-100 border-r border-red-200 md:h-screen md:sticky md:top-0 z-50 flex flex-col flex-shrink-0">
+        <div class="p-6 border-b border-red-200">
+            <h1 class="text-2xl font-bold text-red-700 serif">Thermo<span class="text-orange-500">.Lab</span></h1>
+            <p class="text-xs text-stone-500 mt-2">Lezione Termodinamica - 12 Febbraio 2026</p>
+        </div>
+        <div class="flex-1 overflow-y-auto p-4 space-y-2">
+            <button onclick="scrollToSection('intro')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-red-200 transition-colors text-sm" data-target="intro">Introduzione</button>
+            <button onclick="scrollToSection('concepts')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-red-200 transition-colors text-sm" data-target="concepts">Concetti Fondamentali</button>
+            <button onclick="scrollToSection('exercise1')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-red-200 transition-colors text-sm" data-target="exercise1">Es. 1: Riscaldamento H₂O</button>
+            <button onclick="scrollToSection('exercise2')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-red-200 transition-colors text-sm" data-target="exercise2">Es. 2: Fusione Ferro</button>
+            <button onclick="scrollToSection('exercise3')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-red-200 transition-colors text-sm" data-target="exercise3">Es. 3: Ghiaccio a Acqua</button>
+            <button onclick="scrollToSection('summary')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-red-200 transition-colors text-sm" data-target="summary">Riepilogo</button>
+        </div>
+        <div class="p-4 border-t border-red-200 text-xs text-stone-400">
+            Basato sulla lezione di termodinamica del 12 Febbraio 2026.
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 p-6 md:p-10 overflow-y-auto scroll-smooth">
+        
+        <!-- INTRO SECTION -->
+        <section id="intro" class="mb-16 max-w-4xl mx-auto">
+            <div class="bg-white rounded-2xl shadow-sm p-8 border-l-4 border-red-600">
+                <h2 class="text-3xl md:text-4xl font-bold text-stone-800 mb-4 serif">Termodinamica: Calore e Temperatura</h2>
+                <p class="text-lg text-stone-600 leading-relaxed mb-4">
+                    Benvenuto in questa lezione interattiva sulla termodinamica. Esploreremo i concetti fondamentali di 
+                    <strong>temperatura</strong>, <strong>calore</strong>, <strong>equilibrio termico</strong> e i <strong>cambiamenti di stato</strong>.
+                </p>
+                <p class="text-stone-600 leading-relaxed">
+                    Attraverso tre esercizi pratici, imparerai a calcolare il calore necessario per:
+                </p>
+                <ul class="list-disc list-inside text-stone-600 mt-3 space-y-2">
+                    <li>Riscaldare l'acqua da temperatura ambiente a ebollizione</li>
+                    <li>Portare il ferro fino alla fusione</li>
+                    <li>Trasformare il ghiaccio in acqua passando attraverso il punto di fusione</li>
+                </ul>
+                <div class="mt-6 flex flex-wrap gap-3">
+                    <span class="px-3 py-1 bg-red-50 text-red-700 rounded-full text-sm font-medium">Calore</span>
+                    <span class="px-3 py-1 bg-orange-50 text-orange-700 rounded-full text-sm font-medium">Temperatura</span>
+                    <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">Cambiamenti di Stato</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- CONCEPTS SECTION -->
+        <section id="concepts" class="mb-20 max-w-5xl mx-auto">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-stone-800 mb-3 flex items-center gap-2">
+                    <span class="text-red-600 text-xl">01.</span> Concetti Fondamentali
+                </h2>
+                <p class="text-stone-600 max-w-2xl">
+                    Prima di risolvere gli esercizi, rivediamo i concetti chiave della termodinamica.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Temperatura -->
+                <div class="glass-card p-6 rounded-xl hover:shadow-md transition-shadow">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-2xl">
+                            🌡️
+                        </div>
+                        <h3 class="text-lg font-bold text-stone-800">Temperatura</h3>
+                    </div>
+                    <p class="text-sm text-stone-600">
+                        Grandezza fisica che indica quanto è caldo o freddo un corpo. Si misura in Celsius (°C), Kelvin (K) o Fahrenheit (°F).
+                    </p>
+                </div>
+
+                <!-- Equilibrio Termico -->
+                <div class="glass-card p-6 rounded-xl hover:shadow-md transition-shadow">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-2xl">
+                            ⚖️
+                        </div>
+                        <h3 class="text-lg font-bold text-stone-800">Equilibrio Termico</h3>
+                    </div>
+                    <p class="text-sm text-stone-600">
+                        Due corpi a temperature diverse, messi a contatto, raggiungono una temperatura intermedia comune (principio zero della termodinamica).
+                    </p>
+                </div>
+
+                <!-- Calore -->
+                <div class="glass-card p-6 rounded-xl hover:shadow-md transition-shadow">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center text-2xl">
+                            🔥
+                        </div>
+                        <h3 class="text-lg font-bold text-stone-800">Calore (Q)</h3>
+                    </div>
+                    <p class="text-sm text-stone-600 mb-2">
+                        Energia in transito che si trasmette per differenza di temperatura. Si misura in Joule (J) o calorie (cal).
+                    </p>
+                    <div class="font-mono bg-stone-50 p-2 rounded text-sm text-center">
+                        $$Q = C \times m \times \Delta T$$
+                    </div>
+                </div>
+
+                <!-- Capacità Termica -->
+                <div class="glass-card p-6 rounded-xl hover:shadow-md transition-shadow">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-2xl">
+                            💧
+                        </div>
+                        <h3 class="text-lg font-bold text-stone-800">Calore Specifico (C)</h3>
+                    </div>
+                    <p class="text-sm text-stone-600 mb-2">
+                        Quantità di calore necessaria per far aumentare di 1°C la temperatura di 1 kg (o 1 g) di sostanza.
+                    </p>
+                    <ul class="text-xs text-stone-500 space-y-1">
+                        <li>• Acqua: 4.186 J/(g·°C) = 1 cal/(g·°C)</li>
+                        <li>• Ferro: 450 J/(kg·°C)</li>
+                        <li>• Ghiaccio: 2.090 J/(kg·°C)</li>
+                    </ul>
+                </div>
+
+                <!-- Calore Latente -->
+                <div class="glass-card p-6 rounded-xl hover:shadow-md transition-shadow lg:col-span-2">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center text-2xl">
+                            🧊
+                        </div>
+                        <h3 class="text-lg font-bold text-stone-800">Calore Latente</h3>
+                    </div>
+                    <p class="text-sm text-stone-600 mb-3">
+                        Energia assorbita o ceduta durante un passaggio di stato <strong>senza variazione di temperatura</strong>. 
+                        Ad esempio, il ghiaccio a 0°C che diventa acqua a 0°C richiede 334 kJ/kg.
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-blue-50 p-3 rounded">
+                            <div class="text-xs text-blue-600 font-semibold mb-1">Fusione Ghiaccio</div>
+                            <div class="font-mono text-sm">334 kJ/kg</div>
+                        </div>
+                        <div class="bg-red-50 p-3 rounded">
+                            <div class="text-xs text-red-600 font-semibold mb-1">Fusione Ferro</div>
+                            <div class="font-mono text-sm">33 kJ/kg</div>
+                        </div>
+                        <div class="bg-purple-50 p-3 rounded">
+                            <div class="text-xs text-purple-600 font-semibold mb-1">Vaporizzazione H₂O</div>
+                            <div class="font-mono text-sm">2.260 kJ/kg</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Temperature Visualization -->
+            <div class="mt-8 bg-white rounded-xl shadow-sm p-6">
+                <h3 class="text-lg font-bold text-stone-800 mb-4">Simulatore di Temperatura</h3>
+                <div class="mb-6">
+                    <input type="range" id="tempSlider" min="-50" max="150" value="20" oninput="updateTempSimulation()" class="w-full">
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div id="tempDisplay" class="p-6 rounded-xl text-center transition-all duration-300">
+                        <div class="text-4xl font-bold mb-2" id="tempValue">20°C</div>
+                        <div class="text-sm text-stone-600" id="tempState">Temperatura ambiente</div>
+                    </div>
+                    <div class="md:col-span-2 bg-stone-50 p-4 rounded-xl">
+                        <div class="text-sm text-stone-700 mb-2 font-semibold">Proprietà:</div>
+                        <ul class="text-sm text-stone-600 space-y-1" id="tempProperties">
+                            <li>• Acqua: Liquida</li>
+                            <li>• Stato confortevole per l'uomo</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- EXERCISE 1: Water Heating -->
+        <section id="exercise1" class="mb-20 max-w-5xl mx-auto">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-stone-800 mb-3 flex items-center gap-2">
+                    <span class="text-red-600 text-xl">02.</span> Esercizio 1: Riscaldamento dell'Acqua
+                </h2>
+                <p class="text-stone-600 max-w-2xl">
+                    Calcolo del calore necessario per portare <strong>200 grammi di acqua da 20°C a 100°C</strong>.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Calculator -->
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h3 class="font-bold text-stone-800 mb-4">Calcolatore Interattivo</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-sm text-stone-600 mb-1 block">Massa (g)</label>
+                            <input type="number" id="ex1Mass" value="200" oninput="calculateEx1()" class="w-full px-4 py-2 border border-stone-200 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="text-sm text-stone-600 mb-1 block">Temperatura iniziale (°C)</label>
+                            <input type="number" id="ex1TempStart" value="20" oninput="calculateEx1()" class="w-full px-4 py-2 border border-stone-200 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="text-sm text-stone-600 mb-1 block">Temperatura finale (°C)</label>
+                            <input type="number" id="ex1TempEnd" value="100" oninput="calculateEx1()" class="w-full px-4 py-2 border border-stone-200 rounded-lg">
+                        </div>
+                    </div>
+
+                    <div class="mt-6 p-4 bg-red-50 rounded-lg">
+                        <div class="text-sm text-stone-600 mb-2">Formula:</div>
+                        <div class="font-mono text-center text-sm mb-3">
+                            $$Q = C \times m \times \Delta T$$
+                        </div>
+                        <div class="text-xs text-stone-500">
+                            Dove C<sub>acqua</sub> = 4,186 J/(g·°C) = 1 cal/(g·°C)
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Result -->
+                <div class="space-y-6">
+                    <div class="bg-white rounded-xl shadow-sm p-6">
+                        <h3 class="font-bold text-stone-800 mb-4">Risultato</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-stone-600">ΔT:</span>
+                                <span class="font-mono font-bold text-lg" id="ex1DeltaT">80°C</span>
+                            </div>
+                            <div class="h-px bg-stone-200"></div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-stone-600">Q (calorie):</span>
+                                <span class="font-mono font-bold text-xl text-red-600" id="ex1ResultCal">16.000 cal</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-stone-600">Q (kcal):</span>
+                                <span class="font-mono font-bold text-lg" id="ex1ResultKcal">16 kcal</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-stone-600">Q (Joule):</span>
+                                <span class="font-mono font-bold text-lg" id="ex1ResultJ">66.976 J</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-stone-600">Q (kJ):</span>
+                                <span class="font-mono font-bold text-lg" id="ex1ResultKJ">66,98 kJ</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
+                        <div class="text-sm font-semibold text-blue-900 mb-2">💡 Nota</div>
+                        <div class="text-sm text-blue-800">
+                            L'acqua ha un calore specifico molto alto, il che significa che può assorbire molta energia termica 
+                            prima di aumentare significativamente la temperatura. Questo la rende ottima per regolare la temperatura ambientale.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- EXERCISE 2: Iron Fusion -->
+        <section id="exercise2" class="mb-20 max-w-5xl mx-auto">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-stone-800 mb-3 flex items-center gap-2">
+                    <span class="text-red-600 text-xl">03.</span> Esercizio 2: Fusione del Ferro
+                </h2>
+                <p class="text-stone-600 max-w-2xl">
+                    Problema: abbiamo <strong>4 kg di ferro</strong> a 377°C e vogliamo portarlo alla temperatura di fusione (1535°C) 
+                    e fonderlo completamente. Abbiamo a disposizione <strong>4000 kJ</strong>. È sufficiente?
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Calculator -->
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h3 class="font-bold text-stone-800 mb-4">Calcolatore Interattivo</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-sm text-stone-600 mb-1 block">Massa (kg)</label>
+                            <input type="number" id="ex2Mass" value="4" oninput="calculateEx2()" class="w-full px-4 py-2 border border-stone-200 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="text-sm text-stone-600 mb-1 block">Temperatura iniziale (°C)</label>
+                            <input type="number" id="ex2TempStart" value="377" oninput="calculateEx2()" class="w-full px-4 py-2 border border-stone-200 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="text-sm text-stone-600 mb-1 block">Energia disponibile (kJ)</label>
+                            <input type="number" id="ex2EnergyAvailable" value="4000" oninput="calculateEx2()" class="w-full px-4 py-2 border border-stone-200 rounded-lg">
+                        </div>
+                    </div>
+
+                    <div class="mt-6 p-4 bg-orange-50 rounded-lg">
+                        <div class="text-sm text-stone-600 mb-2">Dati:</div>
+                        <ul class="text-xs text-stone-600 space-y-1">
+                            <li>• C<sub>ferro</sub> = 450 J/(kg·°C)</li>
+                            <li>• T<sub>fusione</sub> = 1535°C</li>
+                            <li>• Calore latente = 33 kJ/kg</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Result -->
+                <div class="space-y-6">
+                    <div class="bg-white rounded-xl shadow-sm p-6">
+                        <h3 class="font-bold text-stone-800 mb-4">Fase 1: Riscaldamento</h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-stone-600 text-sm">ΔT:</span>
+                                <span class="font-mono" id="ex2DeltaT">1158°C</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-stone-600 text-sm">Q<sub>riscaldamento</sub>:</span>
+                                <span class="font-mono font-bold text-orange-600" id="ex2QHeating">2.084 kJ</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm p-6">
+                        <h3 class="font-bold text-stone-800 mb-4">Fase 2: Fusione</h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-stone-600 text-sm">Q<sub>fusione</sub>:</span>
+                                <span class="font-mono font-bold text-red-600" id="ex2QFusion">132 kJ</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm p-6">
+                        <h3 class="font-bold text-stone-800 mb-4">Totale</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-stone-600">Q<sub>totale</sub>:</span>
+                                <span class="font-mono font-bold text-xl text-red-600" id="ex2QTotal">2.216 kJ</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-stone-600">Energia disponibile:</span>
+                                <span class="font-mono font-bold text-lg" id="ex2Available">4.000 kJ</span>
+                            </div>
+                            <div class="h-px bg-stone-200"></div>
+                            <div id="ex2Verdict" class="p-3 rounded-lg text-center font-semibold">
+                                ✓ SUFFICIENTE
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualization -->
+            <div class="mt-8 bg-white rounded-xl shadow-sm p-6">
+                <h3 class="font-bold text-stone-800 mb-4">Distribuzione dell'Energia</h3>
+                <div class="chart-container">
+                    <canvas id="ex2Chart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- EXERCISE 3: Ice to Water -->
+        <section id="exercise3" class="mb-20 max-w-5xl mx-auto">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-stone-800 mb-3 flex items-center gap-2">
+                    <span class="text-red-600 text-xl">04.</span> Esercizio 3: Dal Ghiaccio all'Acqua
+                </h2>
+                <p class="text-stone-600 max-w-2xl">
+                    Calcolo del calore necessario per portare <strong>0,55 kg di ghiaccio da -20°C a acqua a 20°C</strong> 
+                    attraverso tre fasi distinte.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <!-- Phase 1 -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border-t-4 border-blue-400">
+                    <div class="text-center mb-4">
+                        <div class="text-4xl mb-2">🧊</div>
+                        <h3 class="font-bold text-stone-800">Fase 1</h3>
+                        <div class="text-sm text-stone-600">Riscaldamento Ghiaccio</div>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded-lg mb-3">
+                        <div class="text-center font-mono text-sm">-20°C → 0°C</div>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-stone-600">C<sub>ghiaccio</sub>:</span>
+                            <span class="font-mono">2.090 J/(kg·°C)</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-stone-600">ΔT:</span>
+                            <span class="font-mono">20°C</span>
+                        </div>
+                        <div class="h-px bg-stone-200"></div>
+                        <div class="flex justify-between font-semibold">
+                            <span class="text-blue-600">Q₁:</span>
+                            <span class="font-mono text-blue-600" id="ex3Q1">22,99 kJ</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Phase 2 -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border-t-4 border-purple-400">
+                    <div class="text-center mb-4">
+                        <div class="text-4xl mb-2">💎</div>
+                        <h3 class="font-bold text-stone-800">Fase 2</h3>
+                        <div class="text-sm text-stone-600">Fusione</div>
+                    </div>
+                    <div class="bg-purple-50 p-3 rounded-lg mb-3">
+                        <div class="text-center font-mono text-sm">0°C (solido → liquido)</div>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-stone-600">Calore latente:</span>
+                            <span class="font-mono">334 kJ/kg</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-stone-600">Massa:</span>
+                            <span class="font-mono">0,55 kg</span>
+                        </div>
+                        <div class="h-px bg-stone-200"></div>
+                        <div class="flex justify-between font-semibold">
+                            <span class="text-purple-600">Q₂:</span>
+                            <span class="font-mono text-purple-600" id="ex3Q2">183,70 kJ</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Phase 3 -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border-t-4 border-red-400">
+                    <div class="text-center mb-4">
+                        <div class="text-4xl mb-2">💧</div>
+                        <h3 class="font-bold text-stone-800">Fase 3</h3>
+                        <div class="text-sm text-stone-600">Riscaldamento Acqua</div>
+                    </div>
+                    <div class="bg-red-50 p-3 rounded-lg mb-3">
+                        <div class="text-center font-mono text-sm">0°C → 20°C</div>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-stone-600">C<sub>acqua</sub>:</span>
+                            <span class="font-mono">4.186 J/(kg·°C)</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-stone-600">ΔT:</span>
+                            <span class="font-mono">20°C</span>
+                        </div>
+                        <div class="h-px bg-stone-200"></div>
+                        <div class="flex justify-between font-semibold">
+                            <span class="text-red-600">Q₃:</span>
+                            <span class="font-mono text-red-600" id="ex3Q3">46,05 kJ</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Result -->
+            <div class="bg-gradient-to-r from-blue-500 to-red-500 rounded-xl shadow-lg p-8 text-white text-center">
+                <div class="text-sm font-semibold mb-2 opacity-90">ENERGIA TOTALE RICHIESTA</div>
+                <div class="text-5xl font-bold mb-2" id="ex3Total">252,74 kJ</div>
+                <div class="text-sm opacity-90">Q<sub>tot</sub> = Q₁ + Q₂ + Q₃</div>
+            </div>
+
+            <!-- Chart -->
+            <div class="mt-8 bg-white rounded-xl shadow-sm p-6">
+                <h3 class="font-bold text-stone-800 mb-4">Distribuzione dell'Energia nelle Tre Fasi</h3>
+                <div class="chart-container">
+                    <canvas id="ex3Chart"></canvas>
+                </div>
+                <div class="mt-4 p-4 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
+                    <div class="text-sm font-semibold text-yellow-900 mb-2">⚡ Osservazione Importante</div>
+                    <div class="text-sm text-yellow-800">
+                        Nota come la <strong>Fase 2 (fusione)</strong> richiede più energia (183,7 kJ) rispetto alla somma 
+                        delle altre due fasi (68 kJ totali). Questo dimostra che i cambiamenti di stato richiedono molta più 
+                        energia rispetto alle variazioni di temperatura!
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SUMMARY SECTION -->
+        <section id="summary" class="mb-20 max-w-5xl mx-auto">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-stone-800 mb-3 flex items-center gap-2">
+                    <span class="text-red-600 text-xl">05.</span> Riepilogo e Concetti Chiave
+                </h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Formule Chiave -->
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h3 class="font-bold text-stone-800 mb-4 flex items-center gap-2">
+                        📐 Formule Fondamentali
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="p-3 bg-stone-50 rounded-lg">
+                            <div class="text-xs text-stone-600 mb-1">Calore sensibile</div>
+                            <div class="font-mono text-center">$$Q = C \times m \times \Delta T$$</div>
+                        </div>
+                        <div class="p-3 bg-stone-50 rounded-lg">
+                            <div class="text-xs text-stone-600 mb-1">Calore latente</div>
+                            <div class="font-mono text-center">$$Q = \lambda \times m$$</div>
+                        </div>
+                        <div class="p-3 bg-stone-50 rounded-lg">
+                            <div class="text-xs text-stone-600 mb-1">Conversione</div>
+                            <div class="font-mono text-center text-sm">1 cal = 4,186 J</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Osservazioni -->
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h3 class="font-bold text-stone-800 mb-4 flex items-center gap-2">
+                        💡 Osservazioni Chiave
+                    </h3>
+                    <ul class="space-y-3 text-sm text-stone-600">
+                        <li class="flex gap-2">
+                            <span class="text-red-500 flex-shrink-0">•</span>
+                            <span>Durante i cambiamenti di stato, la temperatura rimane costante mentre viene assorbito/ceduto calore</span>
+                        </li>
+                        <li class="flex gap-2">
+                            <span class="text-red-500 flex-shrink-0">•</span>
+                            <span>Il calore latente di fusione del ghiaccio (334 kJ/kg) è molto maggiore rispetto a quello del ferro (33 kJ/kg)</span>
+                        </li>
+                        <li class="flex gap-2">
+                            <span class="text-red-500 flex-shrink-0">•</span>
+                            <span>Il vapore acqueo a 100°C è più pericoloso dell'acqua bollente per via del calore latente immagazzinato</span>
+                        </li>
+                        <li class="flex gap-2">
+                            <span class="text-red-500 flex-shrink-0">•</span>
+                            <span>Il tungsteno ha un punto di fusione altissimo (~5000°C), ideale per i filamenti delle lampadine</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Conversioni -->
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h3 class="font-bold text-stone-800 mb-4 flex items-center gap-2">
+                        🔄 Conversioni Utili
+                    </h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between items-center p-2 bg-stone-50 rounded">
+                            <span class="text-stone-600">1 caloria (cal)</span>
+                            <span class="font-mono">4,186 J</span>
+                        </div>
+                        <div class="flex justify-between items-center p-2 bg-stone-50 rounded">
+                            <span class="text-stone-600">1 kilocaloria (kcal)</span>
+                            <span class="font-mono">4,186 kJ</span>
+                        </div>
+                        <div class="flex justify-between items-center p-2 bg-stone-50 rounded">
+                            <span class="text-stone-600">1 kJ</span>
+                            <span class="font-mono">1.000 J</span>
+                        </div>
+                        <div class="flex justify-between items-center p-2 bg-stone-50 rounded">
+                            <span class="text-stone-600">°C → K</span>
+                            <span class="font-mono">K = °C + 273,15</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stati della Materia -->
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h3 class="font-bold text-stone-800 mb-4 flex items-center gap-2">
+                        🌡️ Punti di Transizione (H₂O)
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+                            <div class="text-2xl">🧊</div>
+                            <div class="flex-1">
+                                <div class="text-sm font-semibold text-blue-900">Fusione</div>
+                                <div class="text-xs text-blue-700">0°C (273,15 K)</div>
+                            </div>
+                            <div class="font-mono text-sm text-blue-900">334 kJ/kg</div>
+                        </div>
+                        <div class="flex items-center gap-3 p-3 bg-red-50 rounded-lg">
+                            <div class="text-2xl">💨</div>
+                            <div class="flex-1">
+                                <div class="text-sm font-semibold text-red-900">Ebollizione</div>
+                                <div class="text-xs text-red-700">100°C (373,15 K)</div>
+                            </div>
+                            <div class="font-mono text-sm text-red-900">2.260 kJ/kg</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Final Note -->
+            <div class="mt-8 bg-gradient-to-r from-red-50 to-orange-50 rounded-xl p-6 border-l-4 border-red-500">
+                <h3 class="font-bold text-stone-800 mb-3">📚 Conclusione</h3>
+                <p class="text-stone-700 leading-relaxed">
+                    Abbiamo esplorato i concetti fondamentali della termodinamica attraverso tre esercizi pratici. 
+                    Ricorda che il calore è energia in transito, mentre la temperatura è una misura dello stato termico di un corpo. 
+                    I cambiamenti di stato richiedono energia significativa senza cambiamento di temperatura, e questo è cruciale 
+                    per comprendere fenomeni naturali come il ciclo dell'acqua o processi industriali come la fusione dei metalli.
+                </p>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Smooth scrolling function
+        function scrollToSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                
+                // Update active nav item
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.classList.remove('nav-active');
+                });
+                document.querySelector(`[data-target="${sectionId}"]`).classList.add('nav-active');
+            }
+        }
+
+        // Temperature Simulation
+        function updateTempSimulation() {
+            const temp = parseInt(document.getElementById('tempSlider').value);
+            const display = document.getElementById('tempDisplay');
+            const value = document.getElementById('tempValue');
+            const state = document.getElementById('tempState');
+            const properties = document.getElementById('tempProperties');
+
+            value.textContent = temp + '°C';
+
+            if (temp < 0) {
+                display.className = 'p-6 rounded-xl text-center transition-all duration-300 temp-gradient-cold';
+                state.textContent = 'Sotto lo zero - Acqua ghiacciata';
+                properties.innerHTML = `
+                    <li>• Acqua: <strong>Solida (ghiaccio)</strong></li>
+                    <li>• Aria: Molto fredda</li>
+                    <li>• Rischio di congelamento</li>
+                `;
+            } else if (temp < 20) {
+                display.className = 'p-6 rounded-xl text-center transition-all duration-300 bg-blue-100';
+                state.textContent = 'Temperatura fresca';
+                properties.innerHTML = `
+                    <li>• Acqua: Liquida</li>
+                    <li>• Aria: Fresca</li>
+                    <li>• Abbigliamento consigliato: Leggero</li>
+                `;
+            } else if (temp < 40) {
+                display.className = 'p-6 rounded-xl text-center transition-all duration-300 bg-green-100';
+                state.textContent = 'Temperatura ambiente/gradevole';
+                properties.innerHTML = `
+                    <li>• Acqua: Liquida</li>
+                    <li>• Stato confortevole per l'uomo</li>
+                    <li>• Temperatura ideale per attività</li>
+                `;
+            } else if (temp < 80) {
+                display.className = 'p-6 rounded-xl text-center transition-all duration-300 temp-gradient-warm';
+                state.textContent = 'Temperatura calda';
+                properties.innerHTML = `
+                    <li>• Acqua: Liquida</li>
+                    <li>• Aria: Calda</li>
+                    <li>• Attenzione all'idratazione</li>
+                `;
+            } else if (temp < 100) {
+                display.className = 'p-6 rounded-xl text-center transition-all duration-300 temp-gradient-hot';
+                state.textContent = 'Temperatura molto calda';
+                properties.innerHTML = `
+                    <li>• Acqua: Liquida (vicina all'ebollizione)</li>
+                    <li>• Temperatura pericolosa per l'uomo</li>
+                    <li>• Rischio di ustioni</li>
+                `;
+            } else {
+                display.className = 'p-6 rounded-xl text-center transition-all duration-300 bg-red-200';
+                state.textContent = 'Ebollizione!';
+                properties.innerHTML = `
+                    <li>• Acqua: <strong>Vapore</strong></li>
+                    <li>• Cambio di stato in corso</li>
+                    <li>• Temperatura estremamente pericolosa</li>
+                `;
+            }
+        }
+
+        // Exercise 1: Water Heating
+        function calculateEx1() {
+            const mass = parseFloat(document.getElementById('ex1Mass').value) || 0;
+            const tempStart = parseFloat(document.getElementById('ex1TempStart').value) || 0;
+            const tempEnd = parseFloat(document.getElementById('ex1TempEnd').value) || 0;
+            
+            const deltaT = tempEnd - tempStart;
+            const C_water = 4.186; // J/(g·°C) or 1 cal/(g·°C)
+            
+            const Q_cal = mass * 1 * deltaT; // in calories
+            const Q_kcal = Q_cal / 1000;
+            const Q_J = mass * C_water * deltaT;
+            const Q_kJ = Q_J / 1000;
+            
+            document.getElementById('ex1DeltaT').textContent = deltaT.toFixed(0) + '°C';
+            document.getElementById('ex1ResultCal').textContent = Q_cal.toLocaleString('it-IT') + ' cal';
+            document.getElementById('ex1ResultKcal').textContent = Q_kcal.toFixed(0) + ' kcal';
+            document.getElementById('ex1ResultJ').textContent = Q_J.toLocaleString('it-IT', {maximumFractionDigits: 0}) + ' J';
+            document.getElementById('ex1ResultKJ').textContent = Q_kJ.toFixed(2) + ' kJ';
+        }
+
+        // Exercise 2: Iron Fusion
+        function calculateEx2() {
+            const mass = parseFloat(document.getElementById('ex2Mass').value) || 0;
+            const tempStart = parseFloat(document.getElementById('ex2TempStart').value) || 0;
+            const energyAvailable = parseFloat(document.getElementById('ex2EnergyAvailable').value) || 0;
+            
+            const tempFusion = 1535; // °C
+            const C_iron = 450; // J/(kg·°C)
+            const latentHeat = 33; // kJ/kg
+            
+            const deltaT = tempFusion - tempStart;
+            const Q_heating = (C_iron * mass * deltaT) / 1000; // in kJ
+            const Q_fusion = latentHeat * mass; // in kJ
+            const Q_total = Q_heating + Q_fusion;
+            
+            document.getElementById('ex2DeltaT').textContent = deltaT + '°C';
+            document.getElementById('ex2QHeating').textContent = Q_heating.toFixed(0) + ' kJ';
+            document.getElementById('ex2QFusion').textContent = Q_fusion.toFixed(0) + ' kJ';
+            document.getElementById('ex2QTotal').textContent = Q_total.toFixed(0) + ' kJ';
+            document.getElementById('ex2Available').textContent = energyAvailable.toLocaleString('it-IT') + ' kJ';
+            
+            const verdict = document.getElementById('ex2Verdict');
+            if (energyAvailable >= Q_total) {
+                verdict.textContent = '✓ SUFFICIENTE - Energia disponibile: ' + (energyAvailable - Q_total).toFixed(0) + ' kJ in eccesso';
+                verdict.className = 'p-3 rounded-lg text-center font-semibold bg-green-100 text-green-800';
+            } else {
+                verdict.textContent = '✗ INSUFFICIENTE - Mancano ' + (Q_total - energyAvailable).toFixed(0) + ' kJ';
+                verdict.className = 'p-3 rounded-lg text-center font-semibold bg-red-100 text-red-800';
+            }
+            
+            // Update chart
+            updateEx2Chart(Q_heating, Q_fusion);
+        }
+
+        function updateEx2Chart(qHeating, qFusion) {
+            const ctx = document.getElementById('ex2Chart');
+            if (window.ex2ChartInstance) {
+                window.ex2ChartInstance.destroy();
+            }
+            
+            window.ex2ChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Riscaldamento a 1535°C', 'Fusione'],
+                    datasets: [{
+                        data: [qHeating, qFusion],
+                        backgroundColor: ['#fb923c', '#dc2626'],
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '60%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: { family: 'Outfit' },
+                                padding: 15
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + context.parsed.toFixed(0) + ' kJ';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Exercise 3: Ice to Water
+        function calculateEx3() {
+            const mass = 0.55; // kg
+            
+            // Phase 1: Ice heating (-20°C to 0°C)
+            const C_ice = 2090; // J/(kg·°C)
+            const deltaT1 = 20; // °C
+            const Q1 = (C_ice * mass * deltaT1) / 1000; // kJ
+            
+            // Phase 2: Fusion (0°C)
+            const latentHeatFusion = 334; // kJ/kg
+            const Q2 = latentHeatFusion * mass; // kJ
+            
+            // Phase 3: Water heating (0°C to 20°C)
+            const C_water = 4186; // J/(kg·°C)
+            const deltaT3 = 20; // °C
+            const Q3 = (C_water * mass * deltaT3) / 1000; // kJ
+            
+            const Q_total = Q1 + Q2 + Q3;
+            
+            document.getElementById('ex3Q1').textContent = Q1.toFixed(2) + ' kJ';
+            document.getElementById('ex3Q2').textContent = Q2.toFixed(2) + ' kJ';
+            document.getElementById('ex3Q3').textContent = Q3.toFixed(2) + ' kJ';
+            document.getElementById('ex3Total').textContent = Q_total.toFixed(2) + ' kJ';
+            
+            // Update chart
+            updateEx3Chart(Q1, Q2, Q3);
+        }
+
+        function updateEx3Chart(q1, q2, q3) {
+            const ctx = document.getElementById('ex3Chart');
+            if (window.ex3ChartInstance) {
+                window.ex3ChartInstance.destroy();
+            }
+            
+            window.ex3ChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Fase 1:\nGhiaccio\n-20°C → 0°C', 'Fase 2:\nFusione\n0°C', 'Fase 3:\nAcqua\n0°C → 20°C'],
+                    datasets: [{
+                        label: 'Energia (kJ)',
+                        data: [q1, q2, q3],
+                        backgroundColor: ['#60a5fa', '#a855f7', '#ef4444'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Energia: ' + context.parsed.y.toFixed(2) + ' kJ';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Energia (kJ)',
+                                font: { family: 'Outfit', size: 12 }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: { family: 'Outfit', size: 10 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize on load
+        window.addEventListener('load', function() {
+            updateTempSimulation();
+            calculateEx1();
+            calculateEx2();
+            calculateEx3();
+            
+            // Set first nav item as active
+            document.querySelector('[data-target="intro"]').classList.add('nav-active');
+        });
+
+        // Intersection Observer for auto-highlighting nav
+        const sections = document.querySelectorAll('section[id]');
+        const navItems = document.querySelectorAll('.nav-item');
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.getAttribute('id');
+                    navItems.forEach(item => {
+                        item.classList.remove('nav-active');
+                        if (item.getAttribute('data-target') === id) {
+                            item.classList.add('nav-active');
+                        }
+                    });
+                }
+            });
+        }, { threshold: 0.3 });
+
+        sections.forEach(section => observer.observe(section));
+    </script>
+</body>
+</html>
