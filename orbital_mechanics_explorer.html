@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Esploratore Interattivo di Meccanica Orbitale</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Plotly.js for 3D visualizations -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+    <!-- MathJax per il rendering delle formule -->
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #eff6ff; /* Blue 50 - space background */
+            color: #44403c; /* Stone 700 */
+        }
+        h1, h2, h3, .serif {
+            font-family: 'Lora', serif;
+        }
+
+        /* Chart Container Styling */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #eff6ff; }
+        ::-webkit-scrollbar-thumb { background: #93c5fd; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #60a5fa; }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .nav-active {
+            background-color: #2563eb; /* Blue 600 */
+            color: white;
+            font-weight: 600;
+        }
+
+        /* Animation for highlighting */
+        @keyframes flash {
+            0% { background-color: rgba(255, 255, 255, 0.9); }
+            50% { background-color: #dbeafe; } /* Blue 100 */
+            100% { background-color: rgba(255, 255, 255, 0.9); }
+        }
+        .highlight-flash {
+            animation: flash 0.5s ease-in-out;
+        }
+
+        /* Space gradient backgrounds */
+        .space-gradient-1 {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        }
+        .space-gradient-2 {
+            background: linear-gradient(135deg, #312e81 0%, #6366f1 100%);
+        }
+        .space-gradient-3 {
+            background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
+        }
+
+        /* Slider styling */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+            width: 100%;
+        }
+        input[type="range"]::-webkit-slider-track {
+            background: linear-gradient(to right, #dbeafe, #3b82f6);
+            height: 0.5rem;
+            border-radius: 0.5rem;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            background-color: #2563eb;
+            height: 1.5rem;
+            width: 1.5rem;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        /* Canvas for orbital visualization */
+        #orbitCanvas {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            width: 100%;
+            max-width: 600px;
+            height: 400px;
+        }
+
+        /* Planet animation */
+        @keyframes orbit {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .orbiting {
+            animation: orbit 10s linear infinite;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col md:flex-row">
+
+    <!-- SIDEBAR NAVIGATION -->
+    <nav class="w-full md:w-64 bg-blue-100 border-r border-blue-200 md:h-screen md:sticky md:top-0 z-50 flex flex-col flex-shrink-0">
+        <div class="p-6 border-b border-blue-200">
+            <h1 class="text-2xl font-bold text-blue-700 serif">Orbital<span class="text-indigo-500">.Lab</span></h1>
+            <p class="text-xs text-stone-500 mt-2">Lezione Meccanica Orbitale - 13 Febbraio 2026</p>
+        </div>
+        <div class="flex-1 overflow-y-auto p-4 space-y-2">
+            <button onclick="scrollToSection('intro')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-blue-200 transition-colors text-sm" data-target="intro">Introduzione</button>
+            <button onclick="scrollToSection('kepler')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-blue-200 transition-colors text-sm" data-target="kepler">Leggi di Keplero</button>
+            <button onclick="scrollToSection('law1')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-blue-200 transition-colors text-sm" data-target="law1">Prima Legge: Orbite Ellittiche</button>
+            <button onclick="scrollToSection('law2')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-blue-200 transition-colors text-sm" data-target="law2">Seconda Legge: Aree Uguali</button>
+            <button onclick="scrollToSection('law3')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-blue-200 transition-colors text-sm" data-target="law3">Terza Legge: Periodo</button>
+            <button onclick="scrollToSection('gravity')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-blue-200 transition-colors text-sm" data-target="gravity">Legge di Gravitazione</button>
+            <button onclick="scrollToSection('exercise')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-blue-200 transition-colors text-sm" data-target="exercise">Es. Piramidi</button>
+            <button onclick="scrollToSection('summary')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-blue-200 transition-colors text-sm" data-target="summary">Riepilogo</button>
+        </div>
+        <div class="p-4 border-t border-blue-200 text-xs text-stone-400">
+            Basato sulla lezione di fisica del 13 Febbraio 2026.
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 p-6 md:p-10 overflow-y-auto scroll-smooth">
+
+        <!-- INTRO SECTION -->
+        <section id="intro" class="mb-16 max-w-4xl mx-auto">
+            <div class="bg-white rounded-2xl shadow-sm p-8 border-l-4 border-blue-600">
+                <h2 class="text-3xl md:text-4xl font-bold text-stone-800 mb-4 serif">Meccanica Orbitale e Leggi di Keplero</h2>
+                <p class="text-lg text-stone-600 leading-relaxed mb-4">
+                    Benvenuto in questa lezione interattiva sulla meccanica orbitale. Esploreremo le tre
+                    <strong>Leggi di Keplero</strong>, la <strong>Legge di Gravitazione Universale di Newton</strong>
+                    e i fenomeni orbitali come la precessione del perielio.
+                </p>
+                <p class="text-stone-600 leading-relaxed">
+                    Attraverso visualizzazioni interattive ed esercizi pratici, imparerai a:
+                </p>
+                <ul class="list-disc list-inside text-stone-600 mt-3 space-y-2">
+                    <li>Comprendere le orbite ellittiche dei pianeti</li>
+                    <li>Calcolare le forze gravitazionali tra corpi</li>
+                    <li>Analizzare la relazione tra periodo orbitale e distanza dal Sole</li>
+                    <li>Esplorare il problema dei tre corpi e il chaos orbitale</li>
+                </ul>
+                <div class="mt-6 flex flex-wrap gap-3">
+                    <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">Keplero</span>
+                    <span class="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-sm font-medium">Newton</span>
+                    <span class="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm font-medium">Gravitazione</span>
+                    <span class="px-3 py-1 bg-violet-50 text-violet-700 rounded-full text-sm font-medium">Orbite</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- KEPLER OVERVIEW SECTION -->
+        <section id="kepler" class="mb-20 max-w-5xl mx-auto">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-stone-800 mb-3 flex items-center gap-2">
+                    <span class="text-blue-600 text-xl">01.</span> Le Tre Leggi di Keplero
+                </h2>
+                <p class="text-stone-600 max-w-2xl">
+                    Le leggi fondamentali che descrivono il moto dei pianeti attorno al Sole,
+                    derivate dalle osservazioni astronomiche e spiegate dalla fisica newtoniana.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- First Law -->
+                <div class="glass-card p-6 rounded-xl hover:shadow-md transition-shadow border-t-4 border-blue-500">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-2xl">
+                            🌍
+                        </div>
+                        <h3 class="text-lg font-bold text-stone-800">Prima Legge</h3>
+                    </div>
+                    <p class="text-sm text-stone-600 mb-2 font-semibold">Orbite Ellittiche</p>
+                    <p class="text-sm text-stone-600">
+                        I pianeti descrivono orbite ellittiche, con il Sole in uno dei due fuochi dell'ellisse.
+                    </p>
+                </div>
+
+                <!-- Second Law -->
+                <div class="glass-card p-6 rounded-xl hover:shadow-md transition-shadow border-t-4 border-indigo-500">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-2xl">
+                            📐
+                        </div>
+                        <h3 class="text-lg font-bold text-stone-800">Seconda Legge</h3>
+                    </div>
+                    <p class="text-sm text-stone-600 mb-2 font-semibold">Aree Uguali</p>
+                    <p class="text-sm text-stone-600">
+                        Il raggio vettore che congiunge il pianeta al Sole spazza aree uguali in tempi uguali.
+                    </p>
+                </div>
+
+                <!-- Third Law -->
+                <div class="glass-card p-6 rounded-xl hover:shadow-md transition-shadow border-t-4 border-purple-500">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center text-2xl">
+                            ⏱️
+                        </div>
+                        <h3 class="text-lg font-bold text-stone-800">Terza Legge</h3>
+                    </div>
+                    <p class="text-sm text-stone-600 mb-2 font-semibold">Periodo-Distanza</p>
+                    <p class="text-sm text-stone-600">
+                        Il quadrato del periodo orbitale è proporzionale al cubo del semiasse maggiore.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Historical Context -->
+            <div class="mt-8 bg-amber-50 p-6 rounded-xl border-l-4 border-amber-400">
+                <h3 class="font-bold text-amber-900 mb-2 flex items-center gap-2">
+                    📜 Contesto Storico
+                </h3>
+                <p class="text-sm text-amber-800">
+                    Johannes Keplero formulò queste leggi all'inizio del XVII secolo basandosi sulle
+                    osservazioni astronomiche di Tycho Brahe. Circa 80 anni dopo, Isaac Newton derivò
+                    matematicamente le leggi di Keplero dalla sua legge di gravitazione universale,
+                    unificando la meccanica celeste e terrestre.
+                </p>
+            </div>
+        </section>
+
+        <!-- LAW 1: ELLIPTICAL ORBITS -->
+        <section id="law1" class="mb-20 max-w-5xl mx-auto">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-stone-800 mb-3 flex items-center gap-2">
+                    <span class="text-blue-600 text-xl">02.</span> Prima Legge: Orbite Ellittiche
+                </h2>
+                <p class="text-stone-600 max-w-2xl">
+                    Le orbite planetarie sono ellissi, non circonferenze perfette. Il Sole occupa uno dei due fuochi.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Ellipse Visualizer -->
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h3 class="font-bold text-stone-800 mb-4">Visualizzatore di Ellisse</h3>
+
+                    <div class="mb-4">
+                        <canvas id="ellipseCanvas" width="500" height="300" class="w-full border border-stone-200 rounded-lg bg-slate-900"></canvas>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-sm text-stone-600 mb-1 block">Semiasse Maggiore (a)</label>
+                            <input type="range" id="semiMajor" min="50" max="200" value="150" oninput="drawEllipse()" class="w-full">
+                            <div class="text-xs text-stone-500 text-right" id="semiMajorValue">150</div>
+                        </div>
+                        <div>
+                            <label class="text-sm text-stone-600 mb-1 block">Semiasse Minore (b)</label>
+                            <input type="range" id="semiMinor" min="30" max="200" value="100" oninput="drawEllipse()" class="w-full">
+                            <div class="text-xs text-stone-500 text-right" id="semiMinorValue">100</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 p-3 bg-blue-50 rounded-lg">
+                        <div class="text-xs text-stone-600 mb-1">Equazione dell'Ellisse:</div>
+                        <div class="font-mono text-center text-sm">
+                            $$\frac{x^2}{a^2} + \frac{y^2}{b^2} = 1$$
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ellipse Properties -->
+                <div class="space-y-6">
+                    <div class="bg-white rounded-xl shadow-sm p-6">
+                        <h3 class="font-bold text-stone-800 mb-4">Proprietà dell'Ellisse</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-stone-600 text-sm">Distanza Fuochi (c):</span>
+                                <span class="font-mono font-bold" id="focalDistance">86.6</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-stone-600 text-sm">Eccentricità (e):</span>
+                                <span class="font-mono font-bold" id="eccentricity">0.58</span>
+                            </div>
+                            <div class="h-px bg-stone-200"></div>
+                            <div class="text-xs text-stone-500">
+                                Formula: $c = \sqrt{a^2 - b^2}$ <br>
+                                Eccentricità: $e = c/a$
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
+                        <div class="text-sm font-semibold text-blue-900 mb-2">🌍 Orbita Terrestre</div>
+                        <div class="text-sm text-blue-800 space-y-1">
+                            <p>• Perielio: ~147 milioni di km</p>
+                            <p>• Afelio: ~152 milioni di km</p>
+                            <p>• Eccentricità: ~0,017 (quasi circolare!)</p>
+                            <p>• Variazione: solo ~3,4% della distanza media</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-purple-50 p-4 rounded-lg border-l-4 border-purple-400">
+                        <div class="text-sm font-semibold text-purple-900 mb-2">☿ Precessione di Mercurio</div>
+                        <div class="text-sm text-purple-800">
+                            Il perielio di Mercurio precede (ruota) di circa 400 arcosecondi per secolo,
+                            un fenomeno spiegato dalla Relatività Generale di Einstein.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- LAW 2: EQUAL AREAS -->
+        <section id="law2" class="mb-20 max-w-5xl mx-auto">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-stone-800 mb-3 flex items-center gap-2">
+                    <span class="text-blue-600 text-xl">03.</span> Seconda Legge: Aree Uguali in Tempi Uguali
+                </h2>
+                <p class="text-stone-600 max-w-2xl">
+                    Il raggio vettore Sole-pianeta spazza aree uguali in intervalli di tempo uguali.
+                    Questo implica la conservazione del momento angolare.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Visualization -->
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h3 class="font-bold text-stone-800 mb-4">Visualizzazione delle Aree</h3>
+                    <canvas id="areasCanvas" width="500" height="400" class="w-full border border-stone-200 rounded-lg bg-slate-900"></canvas>
+                    <div class="mt-4 text-center">
+                        <button onclick="animateAreas()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Avvia Animazione
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Explanation -->
+                <div class="space-y-6">
+                    <div class="bg-white rounded-xl shadow-sm p-6">
+                        <h3 class="font-bold text-stone-800 mb-4">Conseguenze della Seconda Legge</h3>
+                        <ul class="space-y-3 text-sm text-stone-600">
+                            <li class="flex gap-2">
+                                <span class="text-blue-500 flex-shrink-0">•</span>
+                                <span><strong>Al perielio</strong> (punto più vicino al Sole): il pianeta si muove <strong>più velocemente</strong></span>
+                            </li>
+                            <li class="flex gap-2">
+                                <span class="text-blue-500 flex-shrink-0">•</span>
+                                <span><strong>All'afelio</strong> (punto più lontano): il pianeta si muove <strong>più lentamente</strong></span>
+                            </li>
+                            <li class="flex gap-2">
+                                <span class="text-blue-500 flex-shrink-0">•</span>
+                                <span>La velocità varia in modo tale che l'area spazzata rimanga costante</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm p-6">
+                        <h3 class="font-bold text-stone-800 mb-4">Conservazione del Momento Angolare</h3>
+                        <p class="text-sm text-stone-600 mb-3">
+                            La seconda legge è equivalente alla conservazione del momento angolare:
+                        </p>
+                        <div class="font-mono text-center bg-stone-50 p-3 rounded-lg mb-3">
+                            $$L = m \cdot v \cdot r = \text{costante}$$
+                        </div>
+                        <p class="text-xs text-stone-500">
+                            Dove m è la massa, v la velocità, e r la distanza dal Sole.
+                        </p>
+                    </div>
+
+                    <div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-400">
+                        <div class="text-sm font-semibold text-green-900 mb-2">💡 Velocità Orbitale</div>
+                        <div class="text-sm text-green-800">
+                            La Terra si muove a circa 30,3 km/s al perielio e circa 29,3 km/s all'afelio,
+                            una differenza di circa il 3,3%.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- LAW 3: PERIOD-DISTANCE -->
+        <section id="law3" class="mb-20 max-w-5xl mx-auto">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-stone-800 mb-3 flex items-center gap-2">
+                    <span class="text-blue-600 text-xl">04.</span> Terza Legge: Relazione Periodo-Distanza
+                </h2>
+                <p class="text-stone-600 max-w-2xl">
+                    Il quadrato del periodo orbitale è proporzionale al cubo del semiasse maggiore dell'orbita.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Calculator -->
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h3 class="font-bold text-stone-800 mb-4">Calcolatore della Terza Legge</h3>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-sm text-stone-600 mb-1 block">Semiasse Maggiore (in UA*)</label>
+                            <input type="number" id="keplerA" value="1" step="0.1" oninput="calculateKepler3()" class="w-full px-4 py-2 border border-stone-200 rounded-lg">
+                            <div class="text-xs text-stone-400 mt-1">* 1 UA = 149.6 milioni di km (distanza Terra-Sole)</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 p-4 bg-purple-50 rounded-lg">
+                        <div class="text-sm text-stone-600 mb-2">Formula:</div>
+                        <div class="font-mono text-center text-sm mb-3">
+                            $$T^2 = k \cdot a^3$$
+                        </div>
+                        <div class="text-xs text-stone-500 text-center">
+                            Per a in UA e T in anni terrestri: k = 1
+                        </div>
+                    </div>
+
+                    <div class="mt-4 p-4 bg-blue-50 rounded-lg">
+                        <div class="text-sm text-stone-600 mb-2">Risultato:</div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-stone-700">Periodo orbitale:</span>
+                                <span class="font-mono font-bold text-xl text-blue-600" id="keplerPeriod">1.00 anni</span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-stone-600">In giorni:</span>
+                                <span class="font-mono" id="keplerDays">365.25 giorni</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Planetary Data -->
+                <div class="space-y-6">
+                    <div class="bg-white rounded-xl shadow-sm p-6">
+                        <h3 class="font-bold text-stone-800 mb-4">Dati Planetari del Sistema Solare</h3>
+                        <div class="space-y-2 text-sm">
+                            <div class="grid grid-cols-3 gap-2 p-2 bg-stone-100 rounded font-semibold">
+                                <span>Pianeta</span>
+                                <span class="text-right">a (UA)</span>
+                                <span class="text-right">T (anni)</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 p-2 hover:bg-stone-50 rounded">
+                                <span>☿ Mercurio</span>
+                                <span class="text-right font-mono">0,39</span>
+                                <span class="text-right font-mono">0,24</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 p-2 hover:bg-stone-50 rounded">
+                                <span>♀ Venere</span>
+                                <span class="text-right font-mono">0,72</span>
+                                <span class="text-right font-mono">0,62</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 p-2 hover:bg-stone-50 rounded bg-blue-50">
+                                <span>🌍 Terra</span>
+                                <span class="text-right font-mono">1,00</span>
+                                <span class="text-right font-mono">1,00</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 p-2 hover:bg-stone-50 rounded">
+                                <span>♂ Marte</span>
+                                <span class="text-right font-mono">1,52</span>
+                                <span class="text-right font-mono">1,88</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 p-2 hover:bg-stone-50 rounded">
+                                <span>♃ Giove</span>
+                                <span class="text-right font-mono">5,20</span>
+                                <span class="text-right font-mono">11,86</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 p-2 hover:bg-stone-50 rounded">
+                                <span>♄ Saturno</span>
+                                <span class="text-right font-mono">9,54</span>
+                                <span class="text-right font-mono">29,46</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-indigo-50 p-4 rounded-lg border-l-4 border-indigo-400">
+                        <div class="text-sm font-semibold text-indigo-900 mb-2">📊 Verifica</div>
+                        <div class="text-sm text-indigo-800">
+                            Prova con Marte: a = 1,52 UA → T² = 1,52³ = 3,51 → T = √3,51 ≈ 1,87 anni.
+                            Vicinissimo al valore reale di 1,88 anni!
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart -->
+            <div class="mt-8 bg-white rounded-xl shadow-sm p-6">
+                <h3 class="font-bold text-stone-800 mb-4">Relazione T² vs a³</h3>
+                <div class="chart-container">
+                    <canvas id="keplerChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- NEWTON'S GRAVITY -->
+        <section id="gravity" class="mb-20 max-w-5xl mx-auto">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-stone-800 mb-3 flex items-center gap-2">
+                    <span class="text-blue-600 text-xl">05.</span> Legge di Gravitazione Universale di Newton
+                </h2>
+                <p class="text-stone-600 max-w-2xl">
+                    La forza di gravità tra due corpi è proporzionale al prodotto delle loro masse
+                    e inversamente proporzionale al quadrato della distanza tra loro.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Formula -->
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h3 class="font-bold text-stone-800 mb-4">Legge di Gravitazione</h3>
+
+                    <div class="mb-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
+                        <div class="font-mono text-center text-lg mb-2">
+                            $$F = G \frac{m_1 \cdot m_2}{r^2}$$
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between items-center p-3 bg-stone-50 rounded">
+                            <span class="text-stone-600">Costante G:</span>
+                            <span class="font-mono">6,67 × 10⁻¹¹ N·m²/kg²</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-stone-50 rounded">
+                            <span class="text-stone-600">m₁, m₂:</span>
+                            <span>Masse dei corpi (kg)</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-stone-50 rounded">
+                            <span class="text-stone-600">r:</span>
+                            <span>Distanza tra i centri (m)</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-stone-50 rounded">
+                            <span class="text-stone-600">F:</span>
+                            <span>Forza gravitazionale (N)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Key Concepts -->
+                <div class="space-y-6">
+                    <div class="bg-white rounded-xl shadow-sm p-6">
+                        <h3 class="font-bold text-stone-800 mb-4">Caratteristiche della Gravità</h3>
+                        <ul class="space-y-3 text-sm text-stone-600">
+                            <li class="flex gap-2">
+                                <span class="text-blue-500 flex-shrink-0">•</span>
+                                <span><strong>Universale:</strong> agisce tra tutti i corpi dotati di massa</span>
+                            </li>
+                            <li class="flex gap-2">
+                                <span class="text-blue-500 flex-shrink-0">•</span>
+                                <span><strong>Sempre attrattiva:</strong> mai repulsiva</span>
+                            </li>
+                            <li class="flex gap-2">
+                                <span class="text-blue-500 flex-shrink-0">•</span>
+                                <span><strong>Decade con r²:</strong> diventa rapidamente debole con la distanza</span>
+                            </li>
+                            <li class="flex gap-2">
+                                <span class="text-blue-500 flex-shrink-0">•</span>
+                                <span><strong>Forza debole:</strong> la più debole delle quattro forze fondamentali</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-400">
+                        <div class="text-sm font-semibold text-green-900 mb-2">🌍 Campo Gravitazionale Terrestre</div>
+                        <div class="text-sm text-green-800 space-y-1">
+                            <p>• Accelerazione di gravità: g = 9,81 m/s²</p>
+                            <p>• Varia con latitudine e altitudine</p>
+                            <p>• Peso di un corpo: P = m·g</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-amber-50 p-4 rounded-lg border-l-4 border-amber-400">
+                        <div class="text-sm font-semibold text-amber-900 mb-2">⚠️ Problema dei Tre Corpi</div>
+                        <div class="text-sm text-amber-800">
+                            Con tre o più corpi, il sistema diventa caotico e non ha soluzioni analitiche.
+                            Piccole variazioni nelle condizioni iniziali portano a orbite completamente diverse.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- EXERCISE: PYRAMIDS -->
+        <section id="exercise" class="mb-20 max-w-5xl mx-auto">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-stone-800 mb-3 flex items-center gap-2">
+                    <span class="text-blue-600 text-xl">06.</span> Esercizio: Forza Gravitazionale tra le Piramidi
+                </h2>
+                <p class="text-stone-600 max-w-2xl">
+                    Calcola la forza di attrazione gravitazionale tra la Piramide di Cheope (Khufu)
+                    e la Piramide di Chefren (Khafre) in Egitto.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Calculator -->
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h3 class="font-bold text-stone-800 mb-4">Calcolatore Interattivo</h3>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-sm text-stone-600 mb-1 block">Massa Piramide di Cheope (kg)</label>
+                            <input type="number" id="mass1" value="5750000000" oninput="calculatePyramids()" class="w-full px-4 py-2 border border-stone-200 rounded-lg">
+                            <div class="text-xs text-stone-400 mt-1">≈ 5,75 × 10⁹ kg</div>
+                        </div>
+                        <div>
+                            <label class="text-sm text-stone-600 mb-1 block">Massa Piramide di Chefren (kg)</label>
+                            <input type="number" id="mass2" value="4800000000" oninput="calculatePyramids()" class="w-full px-4 py-2 border border-stone-200 rounded-lg">
+                            <div class="text-xs text-stone-400 mt-1">≈ 4,8 × 10⁹ kg</div>
+                        </div>
+                        <div>
+                            <label class="text-sm text-stone-600 mb-1 block">Distanza (m)</label>
+                            <input type="number" id="distance" value="512" oninput="calculatePyramids()" class="w-full px-4 py-2 border border-stone-200 rounded-lg">
+                            <div class="text-xs text-stone-400 mt-1">Distanza tra i centri delle piramidi</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+                        <div class="text-sm text-stone-600 mb-2">Formula:</div>
+                        <div class="font-mono text-center text-sm mb-3">
+                            $$F = 6{,}67 \times 10^{-11} \frac{m_1 \cdot m_2}{r^2}$$
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Result -->
+                <div class="space-y-6">
+                    <div class="bg-white rounded-xl shadow-sm p-6">
+                        <h3 class="font-bold text-stone-800 mb-4">Risultato</h3>
+                        <div class="space-y-3">
+                            <div class="p-4 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg text-white text-center">
+                                <div class="text-sm opacity-90 mb-1">Forza Gravitazionale</div>
+                                <div class="text-3xl font-bold" id="pyramidForce">4.284 N</div>
+                            </div>
+                            <div class="h-px bg-stone-200"></div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-stone-600">Massa equivalente:</span>
+                                <span class="font-mono font-bold text-lg" id="equivalentMass">437 kg</span>
+                            </div>
+                            <div class="text-xs text-stone-500">
+                                La forza tra le piramidi equivale al peso di circa 437 kg sulla Terra.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-400">
+                        <div class="text-sm font-semibold text-yellow-900 mb-2">💡 Osservazione</div>
+                        <div class="text-sm text-yellow-800">
+                            Nonostante le enormi masse in gioco (miliardi di kg!), la forza gravitazionale
+                            è estremamente debole: equivale solo a circa 4-5 kN. Questo dimostra quanto
+                            sia debole la gravità rispetto alle altre forze fondamentali.
+                        </div>
+                    </div>
+
+                    <div class="bg-purple-50 p-4 rounded-lg border-l-4 border-purple-400">
+                        <div class="text-sm font-semibold text-purple-900 mb-2">🏛️ Curiosità</div>
+                        <div class="text-sm text-purple-800">
+                            Le piramidi di Giza sono tra le strutture più massicce costruite dall'uomo.
+                            La Piramide di Cheope, alta 146 metri, è stata la struttura più alta del mondo
+                            per 3.800 anni!
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SUMMARY SECTION -->
+        <section id="summary" class="mb-20 max-w-5xl mx-auto">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-stone-800 mb-3 flex items-center gap-2">
+                    <span class="text-blue-600 text-xl">07.</span> Riepilogo e Concetti Chiave
+                </h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Formule Chiave -->
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h3 class="font-bold text-stone-800 mb-4 flex items-center gap-2">
+                        📐 Formule Fondamentali
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="p-3 bg-stone-50 rounded-lg">
+                            <div class="text-xs text-stone-600 mb-1">Legge di Gravitazione</div>
+                            <div class="font-mono text-center">$$F = G \frac{m_1 m_2}{r^2}$$</div>
+                        </div>
+                        <div class="p-3 bg-stone-50 rounded-lg">
+                            <div class="text-xs text-stone-600 mb-1">Terza Legge di Keplero</div>
+                            <div class="font-mono text-center">$$T^2 = k \cdot a^3$$</div>
+                        </div>
+                        <div class="p-3 bg-stone-50 rounded-lg">
+                            <div class="text-xs text-stone-600 mb-1">Equazione Ellisse</div>
+                            <div class="font-mono text-center">$$\frac{x^2}{a^2} + \frac{y^2}{b^2} = 1$$</div>
+                        </div>
+                        <div class="p-3 bg-stone-50 rounded-lg">
+                            <div class="text-xs text-stone-600 mb-1">Momento Angolare</div>
+                            <div class="font-mono text-center text-sm">L = m·v·r = costante</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Osservazioni -->
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h3 class="font-bold text-stone-800 mb-4 flex items-center gap-2">
+                        💡 Concetti Chiave
+                    </h3>
+                    <ul class="space-y-3 text-sm text-stone-600">
+                        <li class="flex gap-2">
+                            <span class="text-blue-500 flex-shrink-0">•</span>
+                            <span>Le orbite planetarie sono ellissi, non cerchi perfetti</span>
+                        </li>
+                        <li class="flex gap-2">
+                            <span class="text-blue-500 flex-shrink-0">•</span>
+                            <span>I pianeti si muovono più velocemente quando sono vicini al Sole</span>
+                        </li>
+                        <li class="flex gap-2">
+                            <span class="text-blue-500 flex-shrink-0">•</span>
+                            <span>La gravità è la forza fondamentale più debole, ma domina su scala cosmica</span>
+                        </li>
+                        <li class="flex gap-2">
+                            <span class="text-blue-500 flex-shrink-0">•</span>
+                            <span>Newton derivò matematicamente le leggi di Keplero dalla gravitazione</span>
+                        </li>
+                        <li class="flex gap-2">
+                            <span class="text-blue-500 flex-shrink-0">•</span>
+                            <span>Il problema dei tre corpi è caotico e non ha soluzioni analitiche</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Costanti -->
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h3 class="font-bold text-stone-800 mb-4 flex items-center gap-2">
+                        🔢 Costanti Importanti
+                    </h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between items-center p-2 bg-stone-50 rounded">
+                            <span class="text-stone-600">G (costante gravitazionale)</span>
+                            <span class="font-mono">6,67×10⁻¹¹ N·m²/kg²</span>
+                        </div>
+                        <div class="flex justify-between items-center p-2 bg-stone-50 rounded">
+                            <span class="text-stone-600">g (Terra, superficie)</span>
+                            <span class="font-mono">9,81 m/s²</span>
+                        </div>
+                        <div class="flex justify-between items-center p-2 bg-stone-50 rounded">
+                            <span class="text-stone-600">1 UA (Unità Astronomica)</span>
+                            <span class="font-mono">1,496×10⁸ km</span>
+                        </div>
+                        <div class="flex justify-between items-center p-2 bg-stone-50 rounded">
+                            <span class="text-stone-600">Anno terrestre</span>
+                            <span class="font-mono">365,25 giorni</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dati Orbitali -->
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h3 class="font-bold text-stone-800 mb-4 flex items-center gap-2">
+                        🌍 Dati Orbitali Terrestri
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+                            <div class="text-2xl">🌞</div>
+                            <div class="flex-1">
+                                <div class="text-sm font-semibold text-blue-900">Perielio</div>
+                                <div class="text-xs text-blue-700">≈ 147 milioni di km</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 p-3 bg-indigo-50 rounded-lg">
+                            <div class="text-2xl">🌍</div>
+                            <div class="flex-1">
+                                <div class="text-sm font-semibold text-indigo-900">Afelio</div>
+                                <div class="text-xs text-indigo-700">≈ 152 milioni di km</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
+                            <div class="text-2xl">⚡</div>
+                            <div class="flex-1">
+                                <div class="text-sm font-semibold text-purple-900">Velocità Orbitale</div>
+                                <div class="text-xs text-purple-700">≈ 29,8 km/s (media)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Final Note -->
+            <div class="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border-l-4 border-blue-500">
+                <h3 class="font-bold text-stone-800 mb-3">📚 Conclusione</h3>
+                <p class="text-stone-700 leading-relaxed">
+                    La meccanica orbitale unifica le osservazioni astronomiche di Keplero con la fisica fondamentale
+                    di Newton. Le tre leggi di Keplero, empiricamente derivate dall'osservazione dei pianeti,
+                    trovano la loro spiegazione teorica nella legge di gravitazione universale. Questo rappresenta
+                    uno dei più grandi trionfi della fisica: la dimostrazione che le stesse leggi governano
+                    il moto dei corpi celesti e quello degli oggetti terrestri. La semplicità matematica di queste
+                    leggi contrasta con la complessità del problema dei tre corpi, che introduce elementi di chaos
+                    e imprevedibilità nel sistema solare.
+                </p>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Smooth scrolling function
+        function scrollToSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                // Update active nav item
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.classList.remove('nav-active');
+                });
+                document.querySelector(`[data-target="${sectionId}"]`).classList.add('nav-active');
+            }
+        }
+
+        // Ellipse Drawing
+        function drawEllipse() {
+            const canvas = document.getElementById('ellipseCanvas');
+            const ctx = canvas.getContext('2d');
+            const a = parseFloat(document.getElementById('semiMajor').value);
+            const b = parseFloat(document.getElementById('semiMinor').value);
+
+            // Update labels
+            document.getElementById('semiMajorValue').textContent = a;
+            document.getElementById('semiMinorValue').textContent = b;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Center of canvas
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+
+            // Draw ellipse
+            ctx.beginPath();
+            ctx.ellipse(centerX, centerY, a, b, 0, 0, 2 * Math.PI);
+            ctx.strokeStyle = '#3b82f6';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Calculate focal distance
+            const c = Math.sqrt(Math.abs(a*a - b*b));
+            const e = c / a;
+
+            // Draw foci
+            if (a > b) {
+                // Horizontal ellipse
+                ctx.fillStyle = '#f59e0b';
+                ctx.beginPath();
+                ctx.arc(centerX - c, centerY, 6, 0, 2 * Math.PI);
+                ctx.fill();
+
+                ctx.fillStyle = '#ef4444';
+                ctx.beginPath();
+                ctx.arc(centerX + c, centerY, 6, 0, 2 * Math.PI);
+                ctx.fill();
+
+                // Label Sun
+                ctx.fillStyle = '#f59e0b';
+                ctx.font = '12px Outfit';
+                ctx.fillText('Sole', centerX - c - 10, centerY - 10);
+            } else {
+                // Vertical ellipse
+                ctx.fillStyle = '#f59e0b';
+                ctx.beginPath();
+                ctx.arc(centerX, centerY - c, 6, 0, 2 * Math.PI);
+                ctx.fill();
+
+                ctx.fillStyle = '#ef4444';
+                ctx.beginPath();
+                ctx.arc(centerX, centerY + c, 6, 0, 2 * Math.PI);
+                ctx.fill();
+
+                // Label Sun
+                ctx.fillStyle = '#f59e0b';
+                ctx.font = '12px Outfit';
+                ctx.fillText('Sole', centerX + 10, centerY - c);
+            }
+
+            // Draw axes
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(centerX - a - 10, centerY);
+            ctx.lineTo(centerX + a + 10, centerY);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY - b - 10);
+            ctx.lineTo(centerX, centerY + b + 10);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Update properties
+            document.getElementById('focalDistance').textContent = c.toFixed(1);
+            document.getElementById('eccentricity').textContent = e.toFixed(3);
+        }
+
+        // Areas Animation
+        let areasAnimationId = null;
+        let animationAngle = 0;
+        let isAnimating = false;
+
+        function drawAreas(angle = null) {
+            const canvas = document.getElementById('areasCanvas');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const a = 180;
+            const b = 120;
+            const c = Math.sqrt(a*a - b*b);
+            const focusX = centerX - c;
+            const focusY = centerY;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw ellipse
+            ctx.beginPath();
+            ctx.ellipse(centerX, centerY, a, b, 0, 0, 2 * Math.PI);
+            ctx.strokeStyle = '#3b82f6';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw Sun at focus
+            ctx.fillStyle = '#f59e0b';
+            ctx.beginPath();
+            ctx.arc(focusX, focusY, 8, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Add glow to sun
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#f59e0b';
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            if (angle !== null) {
+                // Animated version with moving planet
+                const planetX = centerX + a * Math.cos(angle);
+                const planetY = centerY + b * Math.sin(angle);
+
+                // Draw swept area
+                ctx.fillStyle = 'rgba(59, 130, 246, 0.4)';
+                ctx.beginPath();
+                ctx.moveTo(focusX, focusY);
+
+                // Draw arc from start to current position
+                const startAngle = 0;
+                const steps = 50;
+                for (let i = 0; i <= steps; i++) {
+                    const t = startAngle + (angle - startAngle) * (i / steps);
+                    const x = centerX + a * Math.cos(t);
+                    const y = centerY + b * Math.sin(t);
+                    ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.fill();
+
+                // Draw radius vector
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(focusX, focusY);
+                ctx.lineTo(planetX, planetY);
+                ctx.stroke();
+
+                // Draw planet
+                ctx.fillStyle = '#3b82f6';
+                ctx.beginPath();
+                ctx.arc(planetX, planetY, 8, 0, 2 * Math.PI);
+                ctx.fill();
+
+                // Add white border to planet
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Draw velocity vector (tangent to ellipse)
+                const dx = -a * Math.sin(angle);
+                const dy = b * Math.cos(angle);
+                const velocityScale = 0.3;
+
+                ctx.strokeStyle = '#10b981';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(planetX, planetY);
+                ctx.lineTo(planetX + dx * velocityScale, planetY + dy * velocityScale);
+                ctx.stroke();
+
+                // Draw arrowhead for velocity
+                const arrowAngle = Math.atan2(dy, dx);
+                const arrowLength = 10;
+                ctx.beginPath();
+                ctx.moveTo(planetX + dx * velocityScale, planetY + dy * velocityScale);
+                ctx.lineTo(
+                    planetX + dx * velocityScale - arrowLength * Math.cos(arrowAngle - Math.PI / 6),
+                    planetY + dy * velocityScale - arrowLength * Math.sin(arrowAngle - Math.PI / 6)
+                );
+                ctx.moveTo(planetX + dx * velocityScale, planetY + dy * velocityScale);
+                ctx.lineTo(
+                    planetX + dx * velocityScale - arrowLength * Math.cos(arrowAngle + Math.PI / 6),
+                    planetY + dy * velocityScale - arrowLength * Math.sin(arrowAngle + Math.PI / 6)
+                );
+                ctx.stroke();
+
+            } else {
+                // Static version showing two equal-area sectors
+                ctx.fillStyle = 'rgba(59, 130, 246, 0.3)';
+
+                // Sector 1 (near perihelion - smaller angle, closer to Sun)
+                ctx.beginPath();
+                ctx.moveTo(focusX, focusY);
+                const steps1 = 30;
+                for (let i = 0; i <= steps1; i++) {
+                    const t = 0.4 * (i / steps1);
+                    const x = centerX + a * Math.cos(t);
+                    const y = centerY + b * Math.sin(t);
+                    ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.fill();
+
+                // Draw planet at perihelion
+                const px1 = centerX + a;
+                const py1 = centerY;
+                ctx.fillStyle = '#3b82f6';
+                ctx.beginPath();
+                ctx.arc(px1, py1, 6, 0, 2 * Math.PI);
+                ctx.fill();
+
+                // Sector 2 (near aphelion - larger angle, farther from Sun)
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.3)';
+                ctx.beginPath();
+                ctx.moveTo(focusX, focusY);
+                const steps2 = 30;
+                const angle2Start = Math.PI - 0.8;
+                const angle2End = Math.PI;
+                for (let i = 0; i <= steps2; i++) {
+                    const t = angle2Start + (angle2End - angle2Start) * (i / steps2);
+                    const x = centerX + a * Math.cos(t);
+                    const y = centerY + b * Math.sin(t);
+                    ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.fill();
+
+                // Draw planet at aphelion
+                const px2 = centerX - a;
+                const py2 = centerY;
+                ctx.fillStyle = '#ef4444';
+                ctx.beginPath();
+                ctx.arc(px2, py2, 6, 0, 2 * Math.PI);
+                ctx.fill();
+
+                // Labels
+                ctx.fillStyle = '#f8fafc';
+                ctx.font = 'bold 14px Outfit';
+                ctx.fillText('Perielio', centerX + 110, centerY - 50);
+                ctx.font = '12px Outfit';
+                ctx.fillText('(veloce, area piccola)', centerX + 110, centerY - 35);
+
+                ctx.font = 'bold 14px Outfit';
+                ctx.fillText('Afelio', centerX - 180, centerY - 50);
+                ctx.font = '12px Outfit';
+                ctx.fillText('(lento, area grande)', centerX - 180, centerY - 35);
+            }
+        }
+
+        function animateAreasStep() {
+            if (!isAnimating) return;
+
+            // Variable speed: faster at perihelion (angle=0), slower at aphelion (angle=π)
+            const a = 180;
+            const b = 120;
+
+            // Calculate distance from focus to planet
+            const planetX = a * Math.cos(animationAngle);
+            const planetY = b * Math.sin(animationAngle);
+            const c = Math.sqrt(a*a - b*b);
+            const r = Math.sqrt(Math.pow(planetX - c, 2) + Math.pow(planetY, 2));
+
+            // Kepler's 2nd law: angular velocity inversely proportional to r²
+            // Adjusted for smooth, visible animation (completes orbit in ~10 seconds)
+            const baseSpeed = 0.008; // Much slower base speed
+            const speed = baseSpeed * (150 / r); // Inversely proportional to distance
+
+            animationAngle += speed;
+
+            if (animationAngle >= 2 * Math.PI) {
+                animationAngle = 0;
+            }
+
+            drawAreas(animationAngle);
+            areasAnimationId = requestAnimationFrame(animateAreasStep);
+        }
+
+        function animateAreas() {
+            const button = event.target;
+
+            if (isAnimating) {
+                // Stop animation
+                isAnimating = false;
+                if (areasAnimationId) {
+                    cancelAnimationFrame(areasAnimationId);
+                }
+                button.textContent = 'Avvia Animazione';
+                button.classList.remove('bg-red-600', 'hover:bg-red-700');
+                button.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                drawAreas(); // Draw static version
+            } else {
+                // Start animation
+                isAnimating = true;
+                animationAngle = 0;
+                button.textContent = 'Ferma Animazione';
+                button.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                button.classList.add('bg-red-600', 'hover:bg-red-700');
+                animateAreasStep();
+            }
+        }
+
+        // Kepler's Third Law Calculator
+        function calculateKepler3() {
+            const a = parseFloat(document.getElementById('keplerA').value);
+            const T = Math.pow(a, 1.5); // T = a^(3/2)
+            const days = T * 365.25;
+
+            document.getElementById('keplerPeriod').textContent = T.toFixed(2) + ' anni';
+            document.getElementById('keplerDays').textContent = days.toFixed(0) + ' giorni';
+        }
+
+        // Kepler Chart
+        function createKeplerChart() {
+            const ctx = document.getElementById('keplerChart');
+
+            // Data for planets
+            const planets = [
+                {name: 'Mercurio', a: 0.39, T: 0.24},
+                {name: 'Venere', a: 0.72, T: 0.62},
+                {name: 'Terra', a: 1.00, T: 1.00},
+                {name: 'Marte', a: 1.52, T: 1.88},
+                {name: 'Giove', a: 5.20, T: 11.86},
+                {name: 'Saturno', a: 9.54, T: 29.46}
+            ];
+
+            const data = planets.map(p => ({
+                x: Math.pow(p.a, 3),
+                y: Math.pow(p.T, 2),
+                label: p.name
+            }));
+
+            new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Pianeti',
+                        data: data.map(d => ({x: d.x, y: d.y})),
+                        backgroundColor: '#3b82f6',
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const planet = data[context.dataIndex];
+                                    return planet.label + ': a³=' + context.parsed.x.toFixed(2) + ', T²=' + context.parsed.y.toFixed(2);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'a³ (UA³)',
+                                font: { family: 'Outfit', size: 12 }
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'T² (anni²)',
+                                font: { family: 'Outfit', size: 12 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Pyramids Calculator
+        function calculatePyramids() {
+            const m1 = parseFloat(document.getElementById('mass1').value);
+            const m2 = parseFloat(document.getElementById('mass2').value);
+            const r = parseFloat(document.getElementById('distance').value);
+            const G = 6.67e-11;
+
+            const F = G * m1 * m2 / (r * r);
+            const g = 9.81;
+            const equivalentMass = F / g;
+
+            document.getElementById('pyramidForce').textContent = F.toFixed(3) + ' N';
+            document.getElementById('equivalentMass').textContent = equivalentMass.toFixed(0) + ' kg';
+        }
+
+        // Initialize on load
+        window.addEventListener('load', function() {
+            drawEllipse();
+            drawAreas();
+            calculateKepler3();
+            createKeplerChart();
+            calculatePyramids();
+
+            // Set first nav item as active
+            document.querySelector('[data-target="intro"]').classList.add('nav-active');
+        });
+
+        // Intersection Observer for auto-highlighting nav
+        const sections = document.querySelectorAll('section[id]');
+        const navItems = document.querySelectorAll('.nav-item');
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.getAttribute('id');
+                    navItems.forEach(item => {
+                        item.classList.remove('nav-active');
+                        if (item.getAttribute('data-target') === id) {
+                            item.classList.add('nav-active');
+                        }
+                    });
+                }
+            });
+        }, { threshold: 0.3 });
+
+        sections.forEach(section => observer.observe(section));
+    </script>
+</body>
+</html>
