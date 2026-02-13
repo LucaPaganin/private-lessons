@@ -284,13 +284,13 @@
                     <div class="space-y-4">
                         <div>
                             <label class="text-sm text-stone-600 mb-1 block">Semiasse Maggiore (a)</label>
-                            <input type="range" id="semiMajor" min="50" max="200" value="150" oninput="drawEllipse()" class="w-full">
-                            <div class="text-xs text-stone-500 text-right" id="semiMajorValue">150</div>
+                            <input type="range" id="semiMajor" min="50" max="200" step="0.1" value="150" oninput="drawEllipse()" class="w-full">
+                            <div class="text-xs text-stone-500 text-right" id="semiMajorValue">150.0</div>
                         </div>
                         <div>
                             <label class="text-sm text-stone-600 mb-1 block">Semiasse Minore (b)</label>
-                            <input type="range" id="semiMinor" min="30" max="200" value="100" oninput="drawEllipse()" class="w-full">
-                            <div class="text-xs text-stone-500 text-right" id="semiMinorValue">100</div>
+                            <input type="range" id="semiMinor" min="30" max="200" step="0.1" value="100" oninput="drawEllipse()" class="w-full">
+                            <div class="text-xs text-stone-500 text-right" id="semiMinorValue">100.0</div>
                         </div>
                     </div>
 
@@ -356,57 +356,78 @@
                 </p>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <!-- Visualization -->
-                <div class="bg-white rounded-xl shadow-sm p-6">
-                    <h3 class="font-bold text-stone-800 mb-4">Visualizzazione delle Aree</h3>
-                    <canvas id="areasCanvas" width="500" height="400" class="w-full border border-stone-200 rounded-lg bg-slate-900"></canvas>
-                    <div class="mt-4 text-center">
-                        <button onclick="animateAreas()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                            Avvia Animazione
-                        </button>
-                    </div>
+            <!-- Visualization - Full Width -->
+            <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+                <h3 class="font-bold text-stone-800 mb-4">Visualizzazione delle Aree</h3>
+                <div class="flex justify-center mb-4">
+                    <canvas id="areasCanvas" width="800" height="500" class="border border-stone-200 rounded-lg bg-slate-900" style="max-width: 100%;"></canvas>
                 </div>
 
-                <!-- Explanation -->
-                <div class="space-y-6">
-                    <div class="bg-white rounded-xl shadow-sm p-6">
-                        <h3 class="font-bold text-stone-800 mb-4">Conseguenze della Seconda Legge</h3>
-                        <ul class="space-y-3 text-sm text-stone-600">
-                            <li class="flex gap-2">
-                                <span class="text-blue-500 flex-shrink-0">•</span>
-                                <span><strong>Al perielio</strong> (punto più vicino al Sole): il pianeta si muove <strong>più velocemente</strong></span>
-                            </li>
-                            <li class="flex gap-2">
-                                <span class="text-blue-500 flex-shrink-0">•</span>
-                                <span><strong>All'afelio</strong> (punto più lontano): il pianeta si muove <strong>più lentamente</strong></span>
-                            </li>
-                            <li class="flex gap-2">
-                                <span class="text-blue-500 flex-shrink-0">•</span>
-                                <span>La velocità varia in modo tale che l'area spazzata rimanga costante</span>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <div class="bg-white rounded-xl shadow-sm p-6">
-                        <h3 class="font-bold text-stone-800 mb-4">Conservazione del Momento Angolare</h3>
-                        <p class="text-sm text-stone-600 mb-3">
-                            La seconda legge è equivalente alla conservazione del momento angolare:
-                        </p>
-                        <div class="font-mono text-center bg-stone-50 p-3 rounded-lg mb-3">
-                            $$L = m \cdot v \cdot r = \text{costante}$$
+                <div class="max-w-3xl mx-auto space-y-3">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-sm text-stone-600 mb-1 block">Semiasse Maggiore (a)</label>
+                            <input type="range" id="areasA" min="100" max="350" step="0.1" value="320" oninput="updateAreasEllipse()" class="w-full">
+                            <div class="text-xs text-stone-500 text-right" id="areasAValue">320.0</div>
                         </div>
-                        <p class="text-xs text-stone-500">
-                            Dove m è la massa, v la velocità, e r la distanza dal Sole.
-                        </p>
-                    </div>
-
-                    <div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-400">
-                        <div class="text-sm font-semibold text-green-900 mb-2">💡 Velocità Orbitale</div>
-                        <div class="text-sm text-green-800">
-                            La Terra si muove a circa 30,3 km/s al perielio e circa 29,3 km/s all'afelio,
-                            una differenza di circa il 3,3%.
+                        <div>
+                            <label class="text-sm text-stone-600 mb-1 block">Semiasse Minore (b)</label>
+                            <input type="range" id="areasB" min="80" max="350" step="0.1" value="280" oninput="updateAreasEllipse()" class="w-full">
+                            <div class="text-xs text-stone-500 text-right" id="areasBValue">280.0</div>
                         </div>
+                    </div>
+                    <div class="flex items-center justify-center gap-4">
+                        <button onclick="animateAreas()" class="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold">
+                            Avvia Animazione
+                        </button>
+                        <div class="text-sm text-stone-600">
+                            Eccentricità: <span id="areasEccentricity" class="font-mono font-bold text-blue-600">0.44</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Explanation Boxes Below -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h3 class="font-bold text-stone-800 mb-4">Conseguenze della Seconda Legge</h3>
+                    <ul class="space-y-3 text-sm text-stone-600">
+                        <li class="flex gap-2">
+                            <span class="text-blue-500 flex-shrink-0">•</span>
+                            <span><strong>Al perielio</strong> (punto più vicino al Sole): il pianeta si muove <strong>più velocemente</strong></span>
+                        </li>
+                        <li class="flex gap-2">
+                            <span class="text-blue-500 flex-shrink-0">•</span>
+                            <span><strong>All'afelio</strong> (punto più lontano): il pianeta si muove <strong>più lentamente</strong></span>
+                        </li>
+                        <li class="flex gap-2">
+                            <span class="text-blue-500 flex-shrink-0">•</span>
+                            <span>La velocità varia in modo tale che l'area spazzata rimanga costante</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h3 class="font-bold text-stone-800 mb-4">Conservazione del Momento Angolare</h3>
+                    <p class="text-sm text-stone-600 mb-3">
+                        La seconda legge è equivalente alla conservazione del momento angolare:
+                    </p>
+                    <div class="font-mono text-center bg-stone-50 p-3 rounded-lg mb-3">
+                        $$L = m \cdot v \cdot r = \text{costante}$$
+                    </div>
+                    <p class="text-xs text-stone-500">
+                        Dove m è la massa, v la velocità, e r la distanza dal Sole.
+                    </p>
+                </div>
+
+                <div class="bg-green-50 p-6 rounded-xl border-l-4 border-green-400">
+                    <div class="text-sm font-semibold text-green-900 mb-2">💡 Velocità Orbitale</div>
+                    <div class="text-sm text-green-800 mb-3">
+                        La Terra si muove a circa 30,3 km/s al perielio e circa 29,3 km/s all'afelio,
+                        una differenza di circa il 3,3%.
+                    </div>
+                    <div class="text-xs text-green-700 mt-2 pt-2 border-t border-green-200">
+                        Questa variazione di velocità mantiene costante l'area spazzata nell'unità di tempo.
                     </div>
                 </div>
             </div>
@@ -631,12 +652,12 @@
                         <div>
                             <label class="text-sm text-stone-600 mb-1 block">Massa Piramide di Cheope (kg)</label>
                             <input type="number" id="mass1" value="5750000000" oninput="calculatePyramids()" class="w-full px-4 py-2 border border-stone-200 rounded-lg">
-                            <div class="text-xs text-stone-400 mt-1">≈ 5,75 × 10⁹ kg</div>
+                            <div class="text-xs text-stone-400 mt-1" id="mass1scientific">≈ 5,75 × 10⁹ kg</div>
                         </div>
                         <div>
                             <label class="text-sm text-stone-600 mb-1 block">Massa Piramide di Chefren (kg)</label>
-                            <input type="number" id="mass2" value="4800000000" oninput="calculatePyramids()" class="w-full px-4 py-2 border border-stone-200 rounded-lg">
-                            <div class="text-xs text-stone-400 mt-1">≈ 4,8 × 10⁹ kg</div>
+                            <input type="number" id="mass2" value="4880000000" oninput="calculatePyramids()" class="w-full px-4 py-2 border border-stone-200 rounded-lg">
+                            <div class="text-xs text-stone-400 mt-1" id="mass2scientific">≈ 4,88 × 10⁹ kg</div>
                         </div>
                         <div>
                             <label class="text-sm text-stone-600 mb-1 block">Distanza (m)</label>
@@ -664,11 +685,11 @@
                             </div>
                             <div class="h-px bg-stone-200"></div>
                             <div class="flex justify-between items-center">
-                                <span class="text-stone-600">Massa equivalente:</span>
+                                <span class="text-stone-600 text-xs">La forza tra le piramidi equivale al peso di circa:</span>
                                 <span class="font-mono font-bold text-lg" id="equivalentMass">437 kg</span>
                             </div>
                             <div class="text-xs text-stone-500">
-                                La forza tra le piramidi equivale al peso di circa 437 kg sulla Terra.
+                                sulla Terra.
                             </div>
                         </div>
                     </div>
@@ -853,8 +874,8 @@
             const b = parseFloat(document.getElementById('semiMinor').value);
 
             // Update labels
-            document.getElementById('semiMajorValue').textContent = a;
-            document.getElementById('semiMinorValue').textContent = b;
+            document.getElementById('semiMajorValue').textContent = a.toFixed(1);
+            document.getElementById('semiMinorValue').textContent = b.toFixed(1);
 
             // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -933,6 +954,26 @@
         let animationAngle = 0;
         let isAnimating = false;
 
+        function getAreasEllipseParams() {
+            const a = parseFloat(document.getElementById('areasA')?.value || 320);
+            const b = parseFloat(document.getElementById('areasB')?.value || 280);
+            return { a, b };
+        }
+
+        function updateAreasEllipse() {
+            const { a, b } = getAreasEllipseParams();
+            document.getElementById('areasAValue').textContent = a.toFixed(1);
+            document.getElementById('areasBValue').textContent = b.toFixed(1);
+
+            const c = Math.sqrt(Math.abs(a*a - b*b));
+            const e = c / a;
+            document.getElementById('areasEccentricity').textContent = e.toFixed(3);
+
+            if (!isAnimating) {
+                drawAreas();
+            }
+        }
+
         function drawAreas(angle = null) {
             const canvas = document.getElementById('areasCanvas');
             if (!canvas) return;
@@ -940,9 +981,8 @@
             const ctx = canvas.getContext('2d');
             const centerX = canvas.width / 2;
             const centerY = canvas.height / 2;
-            const a = 180;
-            const b = 120;
-            const c = Math.sqrt(a*a - b*b);
+            const { a, b } = getAreasEllipseParams();
+            const c = Math.sqrt(Math.abs(a*a - b*b));
             const focusX = centerX - c;
             const focusY = centerY;
 
@@ -966,6 +1006,12 @@
             ctx.shadowColor = '#f59e0b';
             ctx.fill();
             ctx.shadowBlur = 0;
+
+            // Draw fixed perihelion and aphelion markers
+            const perihelionX = centerX + a;
+            const perihelionY = centerY;
+            const aphelionX = centerX - a;
+            const aphelionY = centerY;
 
             if (angle !== null) {
                 // Animated version with moving planet
@@ -995,6 +1041,24 @@
                 ctx.beginPath();
                 ctx.moveTo(focusX, focusY);
                 ctx.lineTo(planetX, planetY);
+                ctx.stroke();
+
+                // Draw fixed perihelion marker
+                ctx.fillStyle = '#22c55e';
+                ctx.beginPath();
+                ctx.arc(perihelionX, perihelionY, 5, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Draw fixed aphelion marker
+                ctx.fillStyle = '#a855f7';
+                ctx.beginPath();
+                ctx.arc(aphelionX, aphelionY, 5, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
                 ctx.stroke();
 
                 // Draw planet
@@ -1035,6 +1099,48 @@
                     planetY + dy * velocityScale - arrowLength * Math.sin(arrowAngle + Math.PI / 6)
                 );
                 ctx.stroke();
+
+                // Labels with better positioning and backgrounds
+                ctx.save();
+
+                // Sun label
+                ctx.fillStyle = 'rgba(20, 20, 30, 0.8)';
+                ctx.fillRect(focusX - 25, focusY + 15, 50, 20);
+                ctx.fillStyle = '#fbbf24';
+                ctx.font = 'bold 12px Outfit';
+                ctx.textAlign = 'center';
+                ctx.fillText('Sole', focusX, focusY + 28);
+
+                // Perihelion label
+                ctx.fillStyle = 'rgba(20, 20, 30, 0.8)';
+                ctx.fillRect(perihelionX - 35, perihelionY - 35, 70, 20);
+                ctx.fillStyle = '#22c55e';
+                ctx.font = 'bold 11px Outfit';
+                ctx.fillText('Perielio', perihelionX, perihelionY - 22);
+
+                // Aphelion label
+                ctx.fillStyle = 'rgba(20, 20, 30, 0.8)';
+                ctx.fillRect(aphelionX - 30, aphelionY - 35, 60, 20);
+                ctx.fillStyle = '#a855f7';
+                ctx.font = 'bold 11px Outfit';
+                ctx.fillText('Afelio', aphelionX, aphelionY - 22);
+
+                // Moving planet label with distance
+                const planetDist = Math.sqrt(Math.pow(planetX - focusX, 2) + Math.pow(planetY - focusY, 2));
+                const labelOffsetX = planetX > centerX ? 15 : -55;
+                const labelOffsetY = planetY > centerY ? 25 : -10;
+
+                ctx.fillStyle = 'rgba(20, 20, 30, 0.9)';
+                ctx.fillRect(planetX + labelOffsetX - 5, planetY + labelOffsetY - 15, 50, 28);
+                ctx.fillStyle = '#60a5fa';
+                ctx.font = 'bold 11px Outfit';
+                ctx.textAlign = 'left';
+                ctx.fillText('Terra', planetX + labelOffsetX, planetY + labelOffsetY - 2);
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '9px Outfit';
+                ctx.fillText('r=' + planetDist.toFixed(0), planetX + labelOffsetX, planetY + labelOffsetY + 8);
+
+                ctx.restore();
 
             } else {
                 // Static version showing two equal-area sectors
@@ -1102,20 +1208,20 @@
         function animateAreasStep() {
             if (!isAnimating) return;
 
-            // Variable speed: faster at perihelion (angle=0), slower at aphelion (angle=π)
-            const a = 180;
-            const b = 120;
+            // Get current ellipse parameters
+            const { a, b } = getAreasEllipseParams();
 
             // Calculate distance from focus to planet
             const planetX = a * Math.cos(animationAngle);
             const planetY = b * Math.sin(animationAngle);
-            const c = Math.sqrt(a*a - b*b);
+            const c = Math.sqrt(Math.abs(a*a - b*b));
             const r = Math.sqrt(Math.pow(planetX - c, 2) + Math.pow(planetY, 2));
 
             // Kepler's 2nd law: angular velocity inversely proportional to r²
             // Adjusted for smooth, visible animation (completes orbit in ~10 seconds)
             const baseSpeed = 0.008; // Much slower base speed
-            const speed = baseSpeed * (150 / r); // Inversely proportional to distance
+            const avgRadius = (a + b) / 2;
+            const speed = baseSpeed * (avgRadius / r); // Inversely proportional to distance
 
             animationAngle += speed;
 
@@ -1227,11 +1333,25 @@
         }
 
         // Pyramids Calculator
+        function toScientificNotation(value) {
+            const exponent = Math.floor(Math.log10(Math.abs(value)));
+            const mantissa = value / Math.pow(10, exponent);
+            return `≈ ${mantissa.toFixed(2)} × 10${exponent >= 0 ? '⁺' : '⁻'}${Math.abs(exponent).toString().split('').map(d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d]).join('')} kg`;
+        }
+
         function calculatePyramids() {
             const m1 = parseFloat(document.getElementById('mass1').value);
             const m2 = parseFloat(document.getElementById('mass2').value);
             const r = parseFloat(document.getElementById('distance').value);
             const G = 6.67e-11;
+
+            // Update scientific notation labels
+            if (m1 && !isNaN(m1)) {
+                document.getElementById('mass1scientific').textContent = toScientificNotation(m1);
+            }
+            if (m2 && !isNaN(m2)) {
+                document.getElementById('mass2scientific').textContent = toScientificNotation(m2);
+            }
 
             const F = G * m1 * m2 / (r * r);
             const g = 9.81;
