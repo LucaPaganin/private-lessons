@@ -81,7 +81,7 @@ export function FormulaCards() {
         </div>
         <p className="text-sm text-stone-500">
           Attenzione al termine centrale (il doppio prodotto). Dimenticarlo è l&apos;errore più comune!
-          $(2x - 1)^2 ightarrow 4x^2 mathbf{"{- 4x}"} + 1$.
+          $(2x - 1)^2 \rightarrow 4x^2 \mathbf{- 4x} + 1$.
         </p>
       </div>
 
@@ -90,7 +90,7 @@ export function FormulaCards() {
         <div className="flex items-center justify-between gap-4">
           <span className="text-2xl font-mono">$x^{"{-n}"}$</span>
           <span className="text-2xl">=</span>
-          <span className="text-2xl font-mono">$rac{"{1}"}{"{x^n}"}$</span>
+          <span className="text-2xl font-mono">$\frac{"{1}"}{"{x^n}"}$</span>
         </div>
         <p className="text-xs text-stone-400 mt-4">
           Un esponente negativo &quot;ribalta&quot; la frazione. Esempio: $2^{"{-1}"} = 1/2$.
@@ -265,7 +265,8 @@ export function EquationSimulator() {
         <div>
           <strong className="text-white block mb-1">1° Principio (Trasporto)</strong>
           Puoi spostare un termine da una parte all&apos;altra dell&apos;uguale cambiandone il segno.
-          $x + 3 = 0 ightarrow x = -3$
+          $x + 3 = 0 
+ightarrow x = -3$
         </div>
         <div>
           <strong className="text-white block mb-1">2° Principio (Divisione/Moltiplicazione)</strong>
